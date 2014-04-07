@@ -23,6 +23,10 @@ tar zxvf red5-server-${RED5_VER}-server.tar.gz
 cp $RED5_SRC/extras/commons-fileupload-1.2.2.jar $RED5_DIR/lib
 cp $RED5_SRC/extras/commons-io-2.0.jar $RED5_DIR/lib
 
+echo "Creating log and work dirs"
+mkdir $RED5_DIR/log
+mkdir $RED5_DIR/work
+
 echo "Done."
 cd $RED5_SRC
 
