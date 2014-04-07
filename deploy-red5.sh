@@ -18,8 +18,6 @@ sudo rm $RED5_DIR
 sudo rm -rf $NEW_RED5
 sudo mv target/$RED5_TARGET $NEW_RED5
 sudo ln -s $NEW_RED5 $RED5_DIR
-sudo chown -R red5.adm $RED5_DIR
-sudo chown -R red5.adm $NEW_RED5
 sudo chmod -R 777 $NEW_RED5/webapps/
 
 echo "Red5 ready"
