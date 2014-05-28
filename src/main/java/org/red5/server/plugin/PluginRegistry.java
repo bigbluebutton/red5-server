@@ -1,7 +1,7 @@
 /*
  * RED5 Open Source Flash Server - http://code.google.com/p/red5/
  * 
- * Copyright 2006-2013 by respective authors (see below). All rights reserved.
+ * Copyright 2006-2014 by respective authors (see below). All rights reserved.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -144,8 +144,17 @@ public class PluginRegistry {
 		//loop through the plugins and stop them
 		pluginReadLock.lock();
 		try {
-			for (Entry<String, IRed5Plugin> plugin : plugins.entrySet()) {
-				plugin.getValue().doStop();
+			for (Entry<String, IRed5Plugin> pluginEntry : plugins.entrySet()) {
+				IRed5Plugin plugin = pluginEntry.getValue();
+				try {
+					plugin.doStop();
+				} catch (Exception ex) {
+					if (plugin != null) {
+						log.warn("Plugin stop failed for: {}", plugin.getName(), ex);
+					} else {
+						log.warn("Plugin stop failed", ex);
+					}
+				}
 			}
 		} finally {
 			pluginReadLock.unlock();

@@ -7,7 +7,16 @@ The majority of the Red5 project information continues to reside on Google Code.
 
 The Red5 users list may be found here: https://groups.google.com/forum/#!forum/red5interest
 
-Latest version is 1.0.2-M1
+Latest version is 1.0.2-RELEASE
+
+*Red5 1.0.2 Release (9 April 2014)*
+<a href="https://mega.co.nz/#!FFsV0TIC!eEeGePK30nCv0xF5E7w_6S3b_z8Y9pjzMkp2-UgZTYk">Windows Java7</a> | 
+<a href="https://mega.co.nz/#!8EUFwAxR!qJjgtFCs5tY86ZDqolL_nL9SsWradm4BQeOugffZqqs">Tarball</a> | 
+<a href="https://mega.co.nz/#!QUNEiDoI!RhT8p660eJImIuI3kRhuZHfRWxtnZTSpp0-va2_wyrw">ZIP</a>
+
+<i>Note on Bootstrap</i>
+
+The bootstrap and shutdown classes have been moved to the red5-service project; the dependency has been added to this projects pom.
 
 Stack Overflow
 --------------
@@ -19,7 +28,7 @@ Build from Source
 
 To build the red5 jars, execute the following on the command line:
 ```
-mvn -Dmaven.test.skip=true -Dclassifier=bootstrap install
+mvn -Dmaven.test.skip=true install
 ```
 This will create the jars in the "target" directory of the workspace; this will also skip the unit tests.
 
@@ -29,7 +38,7 @@ mvn dependency:copy-dependencies
 ```
 This will download all the dependencies into the "target" directory under "dependency". The next command will package everything up:
 ```
-mvn -Dmaven.test.skip=true -Dmaven.buildNumber.doUpdate=false -Dclassifier=bootstrap package
+mvn -Dmaven.test.skip=true -Dmaven.buildNumber.doUpdate=false package
 ```
 Right now, this will skip the demos directory but I'm working on a fix. The xml nodes to copy the demos are in the
 ```
@@ -42,7 +51,6 @@ To manually copy the "demos", go to http://red5.googlecode.com/svn/flash/trunk/d
 red5/webapps/root/demos
 ```
 Place all the files there.
-
 
 Eclipse
 ----------

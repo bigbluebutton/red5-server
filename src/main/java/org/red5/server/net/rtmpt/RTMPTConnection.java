@@ -1,7 +1,7 @@
 /*
  * RED5 Open Source Flash Server - http://code.google.com/p/red5/
  * 
- * Copyright 2006-2013 by respective authors (see below). All rights reserved.
+ * Copyright 2006-2014 by respective authors (see below). All rights reserved.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -142,7 +142,7 @@ public class RTMPTConnection extends BaseRTMPTConnection {
 	public void handleMessageReceived(Packet message) {
 		log.trace("handleMessageReceived - {}", sessionId);
 		try {
-			executor.execute(new ReceivedMessageTask(sessionId, message, handler, this));
+			executor.submit(new ReceivedMessageTask(sessionId, message, handler, this));
 		} catch (Exception e) {
 			log.warn("Incoming message handling failed", e);
 			if (log.isDebugEnabled()) {
