@@ -3,18 +3,18 @@
 set -x
 
 RED5_SRC=$(pwd)
-RED5_VER=1.0.2
+RED5_VER=1.0.2-RELEASE
 RED5_DIR=red5-server-${RED5_VER}
 
 echo "Preparing build"
 mvn clean
 
 echo "mvn bootstrap install"
-mvn -Dmaven.test.skip=true -Dclassifier=bootstrap install
+mvn dependency:copy-dependencies
 echo "mvn dependencies"
 mvn dependency:copy-dependencies
 echo "mvn package"
-mvn -Dmaven.test.skip=true -Dmaven.buildNumber.doUpdate=false -Dclassifier=bootstrap package
+mvn -Dmaven.test.skip=true -Dmaven.buildNumber.doUpdate=false package
 
 cd $RED5_SRC/target
 echo "Extractring red5"
