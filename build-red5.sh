@@ -3,7 +3,7 @@
 set -x
 
 RED5_SRC=$(pwd)
-RED5_VER=1.0.2-M1
+RED5_VER=1.0.2
 RED5_DIR=red5-server-${RED5_VER}
 
 echo "Preparing build"
