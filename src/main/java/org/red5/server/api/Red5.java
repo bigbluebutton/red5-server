@@ -46,7 +46,7 @@ import org.slf4j.Logger;
  *   
  * @author The Red5 Project
  * @author Luke Hubbard (luke@codegent.com)
- * @author Paul Gregoire (mondain@gmail.com)     
+ * @author Paul Gregoire (mondain@gmail.com) 
  * @author Tiago Daniel Jacobs (os@tdj.cc)  
  */
 public final class Red5 {
@@ -66,12 +66,12 @@ public final class Red5 {
 	/**
 	 * Current server version with revision
 	 */
-	public static final String VERSION = "Red5 Server 1.0.2";
+	public static final String VERSION = "Red5 Server 1.0.3-SNAPSHOT";
 
 	/**
 	 * Current server version for fmsVer requests 
 	 */
-	public static final String FMS_VERSION = "RED5/1,0,2,0";
+	public static final String FMS_VERSION = "RED5/1,0,3,0";
 
 	/**
 	 * Data version for NetStatusEvents
@@ -89,6 +89,11 @@ public final class Red5 {
 	 */
 	private static final long START_TIME = System.currentTimeMillis();
 
+	/**
+	 * Detection of debug mode
+	 */
+	private static boolean debug = java.lang.management.ManagementFactory.getRuntimeMXBean().getInputArguments().toString().indexOf("jdwp") >= 0;
+	
 	/**
 	 * Create a new Red5 object using given connection.
 	 * 
@@ -199,6 +204,15 @@ public final class Red5 {
 
 	public static Object getDataVersion() {
 		return DATA_VERSION;
+	}
+
+	/**
+	 * Returns true if java debugging was detected.
+	 * 
+	 * @return true if debugging, false otherwise
+	 */
+	public static boolean isDebug() {
+		return debug;
 	}
 
 	/**

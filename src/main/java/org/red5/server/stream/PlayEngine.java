@@ -20,6 +20,7 @@ package org.red5.server.stream;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -44,6 +45,7 @@ import org.red5.server.api.stream.OperationNotSupportedException;
 import org.red5.server.api.stream.StreamState;
 import org.red5.server.api.stream.support.DynamicPlayItem;
 import org.red5.server.messaging.AbstractMessage;
+import org.red5.server.messaging.IConsumer;
 import org.red5.server.messaging.IFilter;
 import org.red5.server.messaging.IMessage;
 import org.red5.server.messaging.IMessageComponent;
@@ -54,6 +56,7 @@ import org.red5.server.messaging.IPipe;
 import org.red5.server.messaging.IPipeConnectionListener;
 import org.red5.server.messaging.IProvider;
 import org.red5.server.messaging.IPushableConsumer;
+import org.red5.server.messaging.InMemoryPushPushPipe;
 import org.red5.server.messaging.OOBControlMessage;
 import org.red5.server.messaging.PipeConnectionEvent;
 import org.red5.server.net.rtmp.event.Aggregate;
@@ -508,7 +511,7 @@ public final class PlayEngine implements IFilter, IPushableConsumer, IPipeConnec
 		subscriberStream.setState(StreamState.PLAYING);
 		streamOffset = 0;
 		streamStartTS = -1;
-		if (msgIn != null) {
+		if (msgIn != null && msgOut != null) {
 			// get the stream so that we can grab any metadata and decoder configs
 			IBroadcastStream stream = (IBroadcastStream) ((IBroadcastScope) msgIn).getClientBroadcastStream();
 			// prevent an NPE when a play list is created and then immediately flushed
@@ -592,7 +595,7 @@ public final class PlayEngine implements IFilter, IPushableConsumer, IPipeConnec
 				}
 			}			
 		} else {
-			throw new IOException("Message input pipe is null");
+			throw new IOException(String.format("A message pipe is null - in: %b out: %b", (msgIn == null), (msgOut == null)));
 		}		
 	}
 
@@ -806,6 +809,17 @@ public final class PlayEngine implements IFilter, IPushableConsumer, IPipeConnec
 			lastMessageTs = 0;
 			// XXX is clear ping required?
 			//sendClearPing();
+			if (msgOut != null) {
+				List<IConsumer> consumers = ((InMemoryPushPushPipe) msgOut).getConsumers();
+				// i would assume a list of 1 in most cases
+				if (!consumers.isEmpty()) {
+					log.debug("Message out consumers: {}", consumers.size());
+					for (IConsumer consumer : consumers) {
+						((InMemoryPushPushPipe) msgOut).unsubscribe(consumer);
+					}
+				}
+				msgOut = null;
+			}
 		} else {
 			log.debug("Stream is already in closed state");
 		}
@@ -816,7 +830,7 @@ public final class PlayEngine implements IFilter, IPushableConsumer, IPipeConnec
 	 * bandwidth as well as the requested client buffer into account.
 	 * 
 	 * @param message
-	 * @return
+	 * @return true if it is ok to send more, false otherwise
 	 */
 	private boolean okayToSendMessage(IRTMPEvent message) {
 		if (message instanceof IStreamData) {
@@ -1284,7 +1298,7 @@ public final class PlayEngine implements IFilter, IPushableConsumer, IPipeConnec
 	 * Send VOD check video control message
 	 * 
 	 * @param msgIn
-	 * @return
+	 * @return result of oob control message
 	 */
 	private boolean sendCheckVideoCM(IMessageInput msgIn) {
 		OOBControlMessage oobCtrlMsg = new OOBControlMessage();
@@ -1302,7 +1316,13 @@ public final class PlayEngine implements IFilter, IPushableConsumer, IPipeConnec
 	public void onOOBControlMessage(IMessageComponent source, IPipe pipe, OOBControlMessage oobCtrlMsg) {
 		if ("ConnectionConsumer".equals(oobCtrlMsg.getTarget())) {
 			if (source instanceof IProvider) {
-				msgOut.sendOOBControlMessage((IProvider) source, oobCtrlMsg);
+				if (msgOut != null) {
+					msgOut.sendOOBControlMessage((IProvider) source, oobCtrlMsg);
+				} else {
+					// this may occur when a attempts to play and then disconnects
+					log.warn("Output is not available, message cannot be sent");
+					close();
+				}
 			}
 		}
 	}
@@ -1430,15 +1450,18 @@ public final class PlayEngine implements IFilter, IPushableConsumer, IPipeConnec
 	 * @return          Number of pending video messages
 	 */
 	private long pendingVideoMessages() {
-		OOBControlMessage pendingRequest = new OOBControlMessage();
-		pendingRequest.setTarget("ConnectionConsumer");
-		pendingRequest.setServiceName("pendingVideoCount");
-		msgOut.sendOOBControlMessage(this, pendingRequest);
-		if (pendingRequest.getResult() != null) {
-			return (Long) pendingRequest.getResult();
-		} else {
-			return 0;
+		if (msgOut != null) {
+			OOBControlMessage pendingRequest = new OOBControlMessage();
+			pendingRequest.setTarget("ConnectionConsumer");
+			pendingRequest.setServiceName("pendingVideoCount");
+			msgOut.sendOOBControlMessage(this, pendingRequest);
+			if (pendingRequest.getResult() != null) {
+				return (Long) pendingRequest.getResult();
+			} else {
+				return 0;
+			}
 		}
+		return 0;
 	}
 
 	/**

@@ -14,10 +14,17 @@
             <destName>red5-server.jar</destName>
         </file>
         <file>
-            <source>${project.build.directory}/lib/red5-service-${project.version}.jar</source>
+            <source>${project.build.directory}/lib/red5-service-1.0.3-RELEASE.jar</source>
             <outputDirectory>/</outputDirectory>
             <destName>red5-service.jar</destName>
         </file>
+<!-- jenkins doesnt like this entry; "dependency" seems useful only to eclipse
+        <file>
+            <source>${project.build.directory}/dependency/red5-service-${project.version}.jar</source>
+            <outputDirectory>/</outputDirectory>
+            <destName>red5-service.jar</destName>
+        </file>
+-->
     </files>	
 	<fileSets>
 		<fileSet>
@@ -39,7 +46,7 @@
                 <exclude>hamcrest-core-1.1.jar</exclude>
                 <exclude>junit-4.10.jar</exclude>
                 <exclude>groboutils-core-5.jar</exclude>
-                <exclude>red5-service-${project.version}.jar</exclude>
+                <exclude>red5-service-1.0.3-RELEASE.jar</exclude>
             </excludes>
 		</fileSet>
 		<fileSet>
@@ -54,7 +61,7 @@
                 <exclude>hamcrest-core-1.1.jar</exclude>
                 <exclude>junit-4.10.jar</exclude>
                 <exclude>groboutils-core-5.jar</exclude>
-                <exclude>red5-service-${project.version}.jar</exclude>
+                <exclude>red5-service-1.0.3-RELEASE.jar</exclude>
 			</excludes>
 		</fileSet>
 		<fileSet>
@@ -201,6 +208,38 @@
 			<outputDirectory>/webapps/vod/streams</outputDirectory>
 			<includes>
 				<include>*.flv</include>
+			</includes>
+		</fileSet>
+		<!-- Websocket chat -->
+		<fileSet>
+			<directory>${project.basedir}/src/main/server/webapps/chat</directory>
+			<outputDirectory>/webapps/chat</outputDirectory>
+			<includes>
+				<include>*.html</include>
+				<include>*.js</include>
+			</includes>
+		</fileSet>
+		<fileSet>
+			<directory>${project.basedir}/src/main/server/webapps/chat/WEB-INF</directory>
+			<outputDirectory>/webapps/chat/WEB-INF</outputDirectory>
+			<includes>
+				<include>*.xml</include>
+				<include>*.properties</include>
+			</includes>
+		</fileSet>
+		<fileSet>
+			<directory>${project.basedir}/src/main/server/webapps/chat/WEB-INF/lib</directory>
+			<outputDirectory>/webapps/chat/WEB-INF/lib</outputDirectory>
+			<includes>
+				<include>*.jar</include>
+			</includes>
+		</fileSet>
+		<fileSet>
+			<directory>${project.basedir}/src/main/server/webapps/chat/WEB-INF/classes</directory>
+			<outputDirectory>/webapps/chat/WEB-INF/classes</outputDirectory>
+			<includes>
+				<include>*.xml</include>
+				<include>*.class</include>
 			</includes>
 		</fileSet>
 	</fileSets>
