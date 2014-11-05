@@ -5,7 +5,7 @@
 set -x
 
 RED5_SRC=$(pwd)
-RED5_VER=1.0.2-M1
+RED5_VER=1.0.4-SNAPSHOT
 
 RED5_DIR=/usr/share/red5
 
