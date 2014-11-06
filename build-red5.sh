@@ -27,8 +27,6 @@ echo "Creating log and work dirs"
 mkdir $RED5_DIR/log
 mkdir $RED5_DIR/work
 
-sudo chown -R root.root $RED5_DIR
-
 sudo chown red5.adm $RED5_DIR/log
 sudo chown red5.adm $RED5_DIR/work
 sudo mkdir $RED5_DIR/diagnostics
