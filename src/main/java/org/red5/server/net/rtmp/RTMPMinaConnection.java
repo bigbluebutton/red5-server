@@ -41,8 +41,10 @@ import org.red5.server.api.scope.IScope;
 import org.red5.server.jmx.mxbeans.RTMPMinaConnectionMXBean;
 import org.red5.server.net.rtmp.codec.RTMP;
 import org.red5.server.net.rtmp.event.ClientBW;
+import org.red5.server.net.rtmp.event.IRTMPEvent;
 import org.red5.server.net.rtmp.event.ServerBW;
 import org.red5.server.net.rtmp.message.Constants;
+import org.red5.server.net.rtmp.message.Header;
 import org.red5.server.net.rtmp.message.Packet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -146,6 +148,12 @@ public class RTMPMinaConnection extends RTMPConnection implements RTMPMinaConnec
 		unregisterJMX();
 	}
 
+	private String getMessageType(Packet packet) {
+		final Header header = packet.getHeader();
+		final byte headerDataType = header.getDataType();
+		return	Integer.toHexString(headerDataType);
+	}
+	
 	/** {@inheritDoc} */
 	@SuppressWarnings({ "unchecked" })
 	@Override
@@ -175,7 +183,7 @@ public class RTMPMinaConnection extends RTMPConnection implements RTMPMinaConnec
 						}
 					});
 				} catch (Exception e) {
-					log.warn("Incoming message handling failed on {}", getSessionId(), e);
+					log.warn("Incoming message handling failed on session=[{}], messageType=[{}]", new Object[] { getSessionId(), getMessageType(message) }, e);
 					if (log.isDebugEnabled()) {
 						log.debug("Execution rejected on {} - {}", getSessionId(), state.states[getStateCode()]);
 						log.debug("Lock permits - decode: {} encode: {}", decoderLock.availablePermits(), encoderLock.availablePermits());
