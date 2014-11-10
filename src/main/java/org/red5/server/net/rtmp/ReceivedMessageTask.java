@@ -4,12 +4,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.red5.server.api.Red5;
-import org.red5.server.api.service.IPendingServiceCall;
-import org.red5.server.api.service.IServiceCall;
-import org.red5.server.net.rtmp.event.IRTMPEvent;
-import org.red5.server.net.rtmp.event.Invoke;
 import org.red5.server.net.rtmp.message.Packet;
-import org.red5.server.service.Call;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,9 +23,9 @@ public final class ReceivedMessageTask implements Callable<Boolean> {
 	// flag representing handling status
 	private AtomicBoolean done = new AtomicBoolean(false);
 
-	// deadlock guard thread
-	private Thread guard;
-	
+	// deadlock guard instance
+	private DeadlockGuard guard;
+		
 	// maximum time allowed to process received message
 	private long maxHandlingTimeout = 500L;
 	
@@ -53,25 +48,13 @@ public final class ReceivedMessageTask implements Callable<Boolean> {
 			// don't run the deadlock guard if we're in debug mode
 			if (!Red5.isDebug()) {
 				// run a deadlock guard so hanging tasks will be interrupted
-				guard = new Thread(new DeadlockGuard(Thread.currentThread()));
-				guard.start();
+				guard = new DeadlockGuard(Thread.currentThread());
+				new Thread(guard).start();
 			}
 			// pass message to the handler
 			handler.messageReceived(conn, message);
-			// if connected status is not yet set check that we aren't being denied
-			if (!conn.isConnected()) {
-				// check for denied / reject
-				IRTMPEvent event = message.getMessage();
-				if (event instanceof Invoke) {
-					IServiceCall call = ((Invoke) event).getCall();
-					if (call.getStatus() == Call.STATUS_ACCESS_DENIED && call instanceof IPendingServiceCall) {
-						log.warn("Connection was denied, calling inactive for session id: {}", sessionId);
-						conn.onInactive();
-					}
-				}
-			}
 		} catch (Exception e) {
-			log.error("Error processing received message {}", sessionId, e);
+			log.error("Error processing received message {} on {}", message, sessionId, e);
 		} finally {
 			//log.info("[{}] run end", sessionId);
 			// clear thread local
@@ -79,8 +62,11 @@ public final class ReceivedMessageTask implements Callable<Boolean> {
 			// set done / completed flag
 			done.set(true);
 			if (guard != null) {
-				// interrupt and join on deadlock guard
-				guard.interrupt();
+				// interrupt deadlock guard if sleeping
+				if (guard.isSleeping()) {
+					guard.interrupt();
+				}
+				// join it
 				guard.join();
 			}
 		}
@@ -101,21 +87,52 @@ public final class ReceivedMessageTask implements Callable<Boolean> {
 	 */
 	private class DeadlockGuard implements Runnable {
 		
-		Thread thread;
+		Thread ownerThread;
+
+		Thread taskThread;
+		
+		boolean sleeping;
 		
 		DeadlockGuard(Thread thread) {
-			this.thread = thread;
+			this.taskThread = thread;
+			this.ownerThread = Thread.currentThread();
 		}
 		
+		public void join() {
+			try {
+				ownerThread.join(maxHandlingTimeout / 4);
+			} catch (InterruptedException e) {
+				log.debug("Deadlock guard interrupted on {} during join", sessionId);	
+			}
+		}
+
+		public void interrupt() {
+			ownerThread.interrupt();			
+		}
+
 		public void run() {
 			try {
+				sleeping = true;
 				Thread.sleep(maxHandlingTimeout);
 			} catch (InterruptedException e) {
+				log.debug("Deadlock guard interrupted on {} during sleep", sessionId);	
+			} finally {
+				sleeping = false;
 			}
 			if (!done.get()) {
-				log.info("Interrupting unfinished task on {}", sessionId);
-				thread.interrupt();
+				if (!taskThread.isInterrupted()) {
+					if (taskThread.isAlive()) {
+						log.warn("Interrupting unfinished active task on {}", sessionId);
+						taskThread.interrupt();
+					}				
+				} else {
+					log.debug("Unfinished active task on {} already interrupted", sessionId);					
+				}
 			}
+		}
+
+		public boolean isSleeping() {
+			return sleeping;
 		}
 		
 	}

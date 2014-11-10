@@ -49,6 +49,7 @@ import org.red5.server.net.rtmp.message.Header;
 import org.red5.server.net.rtmp.message.Packet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.task.TaskRejectedException;
 import org.springframework.jmx.export.annotation.ManagedResource;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
@@ -219,6 +220,12 @@ public class RTMPMinaConnection extends RTMPConnection implements RTMPMinaConnec
 							log.debug("[{}] onSuccess: {}", sessionId, success);
 						}
 					});
+				} catch (TaskRejectedException tre) {
+					Throwable[] suppressed = tre.getSuppressed();
+					for (Throwable t : suppressed) {
+						log.warn("Suppressed exception on {}", sessionId, t);
+					}
+					log.info("Rejected message: {} on {}", message, sessionId);
 				} catch (Exception e) {
 					log.warn("Incoming message handling failed on session=[{}], messageType=[{}]", new Object[] { getSessionId(), getMessageType(message) }, e);
 					if (log.isDebugEnabled()) {

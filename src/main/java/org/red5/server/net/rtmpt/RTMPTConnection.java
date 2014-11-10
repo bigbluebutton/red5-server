@@ -36,6 +36,7 @@ import org.red5.server.net.rtmp.message.Header;
 import org.red5.server.net.rtmp.message.Packet;
 import org.red5.server.net.servlet.ServletUtils;
 import org.slf4j.Logger;
+import org.springframework.core.task.TaskRejectedException;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.util.concurrent.ListenableFuture;
 import org.springframework.util.concurrent.ListenableFutureCallback;
@@ -183,6 +184,12 @@ public class RTMPTConnection extends BaseRTMPTConnection {
 							log.debug("[{}] onSuccess: {}", sessionId, success);
 						}
 					});
+				} catch (TaskRejectedException tre) {
+					Throwable[] suppressed = tre.getSuppressed();
+					for (Throwable t : suppressed) {
+						log.warn("Suppressed exception on {}", sessionId, t);
+					}
+					log.info("Rejected message: {} on {}", message, sessionId);
 				} catch (Exception e) {
 					log.warn("Incoming message handling failed on session=[{}], messageType=[{}]", new Object[] { getSessionId(), getMessageType(message) }, e);
 					if (log.isDebugEnabled()) {

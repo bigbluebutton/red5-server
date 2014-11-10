@@ -352,8 +352,9 @@ public abstract class RTMPConnection extends BaseConnection implements IStreamCa
 	public void open() {
 		// add the session id to the prefix		
 		executor.setThreadNamePrefix(String.format("RTMPExecutor#%s-", sessionId));
-		executor.setRejectedExecutionHandler(new ThreadPoolExecutor.DiscardOldestPolicy());
-		executor.setAllowCoreThreadTimeOut(true);
+		//executor.setRejectedExecutionHandler(new ThreadPoolExecutor.DiscardOldestPolicy());
+		//executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+		//executor.setAllowCoreThreadTimeOut(true);
 		executor.setDaemon(true);
 		executor.setWaitForTasksToCompleteOnShutdown(true);
 		if (log.isTraceEnabled()) {
@@ -554,6 +555,15 @@ public abstract class RTMPConnection extends BaseConnection implements IStreamCa
 		return idle;
 	}
 
+	/**
+	 * Returns whether or not the connection is disconnected.
+	 * 
+	 * @return true if connection state is RTMP.STATE_DISCONNECTED, false otherwise
+	 */
+	public boolean isDisconnected() {
+		return state.getState() == RTMP.STATE_DISCONNECTED;
+	}	
+	
 	/**
 	 * Creates output stream object from stream id. Output stream consists of audio, data and video channels.
 	 * 
