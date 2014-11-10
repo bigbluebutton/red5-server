@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import javax.management.StandardMBean;
@@ -151,9 +152,45 @@ public class RTMPMinaConnection extends RTMPConnection implements RTMPMinaConnec
 	private String getMessageType(Packet packet) {
 		final Header header = packet.getHeader();
 		final byte headerDataType = header.getDataType();
-		return	Integer.toHexString(headerDataType);
+		return	messageTypeToName(headerDataType);
 	}
 	
+    public String messageTypeToName(byte headerDataType) {
+		switch (headerDataType) {
+			case Constants.TYPE_AGGREGATE:
+				return "TYPE_AGGREGATE";
+			case Constants.TYPE_AUDIO_DATA:
+				return "TYPE_AUDIO_DATA";
+			case Constants.TYPE_VIDEO_DATA:
+				return "TYPE_VIDEO_DATA";
+			case Constants.TYPE_FLEX_SHARED_OBJECT:
+				return "TYPE_FLEX_SHARED_OBJECT";
+			case Constants.TYPE_SHARED_OBJECT:
+				return "TYPE_SHARED_OBJECT";
+			case Constants.TYPE_INVOKE:
+				return "TYPE_INVOKE";
+			case Constants.TYPE_FLEX_MESSAGE:
+				return "TYPE_FLEX_MESSAGE";
+			case Constants.TYPE_NOTIFY: 
+				return "TYPE_NOTIFY";
+			case Constants.TYPE_FLEX_STREAM_SEND:
+				return "TYPE_FLEX_STREAM_SEND";
+			case Constants.TYPE_PING:
+				return "TYPE_PING";
+			case Constants.TYPE_BYTES_READ:
+				return "TYPE_BYTES_READ";
+			case Constants.TYPE_CHUNK_SIZE:
+				return "TYPE_CHUNK_SIZE";
+			case Constants.TYPE_CLIENT_BANDWIDTH: 
+				return "TYPE_CLIENT_BANDWIDTH";
+			case Constants.TYPE_SERVER_BANDWIDTH: 
+				return "TYPE_SERVER_BANDWIDTH";				
+    		default:
+    			return "UNKNOWN [" + headerDataType + "]";
+    				
+    	}   	
+    }
+    
 	/** {@inheritDoc} */
 	@SuppressWarnings({ "unchecked" })
 	@Override
