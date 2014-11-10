@@ -225,6 +225,7 @@ public class RTMPMinaConnection extends RTMPConnection implements RTMPMinaConnec
 					for (Throwable t : suppressed) {
 						log.warn("Suppressed exception on {}", sessionId, t);
 					}
+					log.info("Incoming message rejected on session=[{}], messageType=[{}]", getSessionId(), getMessageType(message));
 					log.info("Rejected message: {} on {}", message, sessionId);
 				} catch (Exception e) {
 					log.warn("Incoming message handling failed on session=[{}], messageType=[{}]", new Object[] { getSessionId(), getMessageType(message) }, e);
