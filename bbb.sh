@@ -6,15 +6,16 @@ set -x
 
 RED5_SRC=$(pwd)
 RED5_VER=1.0.4-SNAPSHOT
+WHOAMI=$(whoami)
 
 RED5_DIR=/usr/share/red5
 
 cd $RED5_SRC
 
-DESKSHARE=/home/ubuntu/dev/bigbluebutton/deskshare
-VOICE=/home/ubuntu/dev/bigbluebutton/bbb-voice
-VIDEO=/home/ubuntu/dev/bigbluebutton/bbb-video
-APPS=/home/ubuntu/dev/bigbluebutton/bigbluebutton-apps
+DESKSHARE=/home/$WHOAMI/dev/bigbluebutton/deskshare
+VOICE=/home/$WHOAMI/dev/bigbluebutton/bbb-voice
+VIDEO=/home/$WHOAMI/dev/bigbluebutton/bbb-video
+APPS=/home/$WHOAMI/dev/bigbluebutton/bigbluebutton-apps
 
 echo "Building apps"
 cd $APPS
