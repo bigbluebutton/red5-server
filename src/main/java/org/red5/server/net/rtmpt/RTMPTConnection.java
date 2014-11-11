@@ -32,7 +32,6 @@ import org.red5.server.net.rtmp.RTMPHandshake;
 import org.red5.server.net.rtmp.ReceivedMessageTask;
 import org.red5.server.net.rtmp.codec.RTMP;
 import org.red5.server.net.rtmp.message.Constants;
-import org.red5.server.net.rtmp.message.Header;
 import org.red5.server.net.rtmp.message.Packet;
 import org.red5.server.net.servlet.ServletUtils;
 import org.slf4j.Logger;
@@ -148,12 +147,6 @@ public class RTMPTConnection extends BaseRTMPTConnection {
 			handleMessageReceived((IoBuffer) message);
 		}
 	}
-	
-	private String getMessageType(Packet packet) {
-		final Header header = packet.getHeader();
-		final byte headerDataType = header.getDataType();
-		return	Integer.toHexString(headerDataType);
-	}
 
 	/** {@inheritDoc} */
 	@SuppressWarnings("unchecked")
@@ -184,7 +177,7 @@ public class RTMPTConnection extends BaseRTMPTConnection {
 						}
 					});
 				} catch (Exception e) {
-					log.warn("Incoming message handling failed on session=[{}], messageType=[{}]", new Object[] { getSessionId(), getMessageType(message) }, e);
+					log.warn("Incoming message handling failed on {}", getSessionId(), e);
 					if (log.isDebugEnabled()) {
 						log.debug("Execution rejected on {} - {}", getSessionId(), state.states[getStateCode()]);
 						log.debug("Lock permits - decode: {} encode: {}", decoderLock.availablePermits(), encoderLock.availablePermits());

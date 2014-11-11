@@ -151,17 +151,17 @@ public abstract class RTMPConnection extends BaseConnection implements IStreamCa
 	/**
 	 * Last ping round trip time
 	 */
-	private AtomicInteger lastPingRoundTripTime = new AtomicInteger(-1);
+	private AtomicInteger lastPingTime = new AtomicInteger(-1);
 
 	/**
 	 * Timestamp when last ping command was sent.
 	 */
-	private AtomicLong lastPingSentOn = new AtomicLong(0);
+	private AtomicLong lastPingSent = new AtomicLong(0);
 
 	/**
 	 * Timestamp when last ping result was received.
 	 */
-	private AtomicLong lastPongReceivedOn = new AtomicLong(0);
+	private AtomicLong lastPongReceived = new AtomicLong(0);
 
 	/**
 	 * RTMP events handler
@@ -547,8 +547,8 @@ public abstract class RTMPConnection extends BaseConnection implements IStreamCa
 	 * @return true if max idle period has been exceeded, false otherwise
 	 */
 	public boolean isIdle() {
-		long lastPingTime = lastPingSentOn.get();
-		long lastPongTime = lastPongReceivedOn.get();
+		long lastPingTime = lastPingSent.get();
+		long lastPongTime = lastPongReceived.get();
 		boolean idle = (lastPongTime > 0 && (lastPingTime - lastPongTime > maxInactivity));
 		log.trace("Connection {} {} idle", getSessionId(), (idle ? "is" : "is not"));
 		return idle;
@@ -1183,13 +1183,13 @@ public abstract class RTMPConnection extends BaseConnection implements IStreamCa
 	/** {@inheritDoc} */
 	public void ping() {
 		long newPingTime = System.currentTimeMillis();
-		log.debug("Send Ping: session=[{}], currentTime=[{}], lastPingTime=[{}]", new Object[] { getSessionId(), newPingTime, lastPingSentOn.get() });
-		if (lastPingSentOn.get() == 0) {
-			lastPongReceivedOn.set(newPingTime);
+		log.debug("Pinging {} at {}, last ping sent at {}", new Object[] { getSessionId(), newPingTime, lastPingSent.get() });
+		if (lastPingSent.get() == 0) {
+			lastPongReceived.set(newPingTime);
 		}
 		Ping pingRequest = new Ping();
 		pingRequest.setEventType(Ping.PING_CLIENT);
-		lastPingSentOn.set(newPingTime);
+		lastPingSent.set(newPingTime);
 		int now = (int) (newPingTime & 0xffffffff);
 		pingRequest.setValue2(now);
 		ping(pingRequest);
@@ -1203,21 +1203,17 @@ public abstract class RTMPConnection extends BaseConnection implements IStreamCa
 	 */
 	public void pingReceived(Ping pong) {
 		long now = System.currentTimeMillis();
-		long previousPingValue = (int) (lastPingSentOn.get() & 0xffffffff);
-		log.debug("Pong from {} at {} with value {}, previous received at {}", new Object[] { getSessionId(), now, pong.getValue2(), previousPingValue });
-		if (pong.getValue2() == previousPingValue) {
-			lastPingRoundTripTime.set((int) (now & 0xffffffff) - pong.getValue2());
-			log.debug("Ping response session=[{}], RTT=[{} ms]", new Object[] { getSessionId(), lastPingRoundTripTime.get() });
-		} else {
-			int pingRtt = (int) (now & 0xffffffff) - pong.getValue2();
-			log.info("Pong delayed: session=[{}], ping response took [{} ms] to arrive. Connection may be congested.", new Object[] { getSessionId(), pingRtt });
+		long previousReceived = (int) (lastPingSent.get() & 0xffffffff);
+		log.debug("Pong from {} at {} with value {}, previous received at {}", new Object[] { getSessionId(), now, pong.getValue2(), previousReceived });
+		if (pong.getValue2() == previousReceived) {
+			lastPingTime.set((int) (now & 0xffffffff) - pong.getValue2());
 		}
-		lastPongReceivedOn.set(now);
+		lastPongReceived.set(now);
 	}
 
 	/** {@inheritDoc} */
 	public int getLastPingTime() {
-		return lastPingRoundTripTime.get();
+		return lastPingTime.get();
 	}
 
 	/**
@@ -1363,25 +1359,29 @@ public abstract class RTMPConnection extends BaseConnection implements IStreamCa
 									onInactive();
 								}
 							} else {
-
+								// send ping command to client to trigger sending of data
+								ping();
+								// sleep for 1 second
+								Thread.sleep(1000L);
 								// client didn't send response to ping command and didn't sent data for too long, disconnect
-								long lastPingTime = lastPingSentOn.get();
-								long lastPongTime = lastPongReceivedOn.get();
-								if (lastPongTime > 0 && (lastPingTime - lastPongTime > maxInactivity) && (now - lastBytesReadTime > maxInactivity)) {
-									log.warn("Closing connection - inactivity timeout: session=[{}}, lastPongReceived=[{} ms ago], lastPingSent=[{} ms ago], lastDataRx=[{} ms ago]", new Object[] { getSessionId(),
-											(lastPingTime - lastPongTime), (now - lastPingTime),  (now - lastBytesReadTime)});
+								long lastPingTime = lastPingSent.get();
+								long lastPongTime = lastPongReceived.get();
+								if (lastPongTime > 0 && (lastPingTime - lastPongTime > maxInactivity) && !(now - lastBytesReadTime < maxInactivity)) {
+									log.warn("Closing {}, due to too much inactivity ({} ms), last ping sent {} ms ago", new Object[] { getSessionId(),
+											(lastPingTime - lastPongTime), (now - lastPingTime) });
 									// the following line deals with a very common support request
-									log.warn("Client on session=[{}] has not responded to our ping for [{} ms] and we haven't received data for [{} ms]",
-											new Object[] { getSessionId(), (lastPingTime - lastPongTime), (now - lastBytesReadTime)});
+									log.warn("This often happens if YOUR Red5 application generated an exception on start-up. Check earlier in the log for that exception first!");
 									onInactive();
-								} else {
-									// send ping command to client to trigger sending of data
-									ping();									
 								}
 							}
 						} else {
-							log.info("Connection [{}] already close. Clean up connection. Connection state: [{}]", getSessionId(), state.states[state.getState()]);
+							log.debug("No longer connected, clean up connection. Connection state: {}", state.states[state.getState()]);
 							onInactive();
+						}
+					} catch (InterruptedException e) {
+						// only interested in this interrupted ex if we are debugging, otherwise its not helpful to most
+						if (log.isDebugEnabled()) {
+							log.warn("Keep alive was interrupted for {}", getSessionId() + " - " + state.states[getStateCode()], e);
 						}
 					} catch (Exception e) {
 						log.warn("Exception in keepalive for {}", getSessionId(), e);
