@@ -26,6 +26,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import javax.management.StandardMBean;
@@ -34,9 +36,6 @@ import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.future.CloseFuture;
 import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.session.IoSession;
-import org.springframework.util.concurrent.ListenableFuture;
-import org.springframework.util.concurrent.ListenableFutureCallback;
-import org.springframework.util.concurrent.ListenableFutureTask;
 import org.red5.server.api.scope.IScope;
 import org.red5.server.jmx.mxbeans.RTMPMinaConnectionMXBean;
 import org.red5.server.net.rtmp.codec.RTMP;
@@ -48,6 +47,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jmx.export.annotation.ManagedResource;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.util.concurrent.ListenableFuture;
+import org.springframework.util.concurrent.ListenableFutureCallback;
+import org.springframework.util.concurrent.ListenableFutureTask;
 
 /**
  * Represents an RTMP connection using Mina.
@@ -76,6 +78,10 @@ public class RTMPMinaConnection extends RTMPConnection implements RTMPMinaConnec
 	protected int defaultClientBandwidth = 10000000;
 
 	protected boolean bandwidthDetection = true;
+	
+	private int executorQueueSizeToDropAudioPackets = 0;
+	
+	protected AtomicInteger currentQueueSize = new AtomicInteger();
 
 	/** Constructs a new RTMPMinaConnection. */
 	@ConstructorProperties(value = { "persistent" })
@@ -162,15 +168,26 @@ public class RTMPMinaConnection extends RTMPConnection implements RTMPMinaConnec
 		} else {
 			if (executor != null) {
 				try {
+					if(currentQueueSize.get() >= getExecutorQueueSizeToDropAudioPackets()) {
+						if(message.getHeader().getDataType() == Constants.TYPE_AUDIO_DATA){
+							log.warn("Discarding audio to prevent filling up the queue");
+							return;
+						}
+					}
+					
 					ReceivedMessageTask task = new ReceivedMessageTask(sessionId, message, handler, this);
 					task.setMaxHandlingTimeout(maxHandlingTimeout);
 					ListenableFuture<Boolean> future = (ListenableFuture<Boolean>) executor.submitListenable(new ListenableFutureTask<Boolean>(task));
+					currentQueueSize.incrementAndGet();
+					
 					future.addCallback(new ListenableFutureCallback<Boolean>() {
 						public void onFailure(Throwable t) {
+							currentQueueSize.decrementAndGet();
 							log.warn("[{}] onFailure", sessionId, t);
 						}
 
 						public void onSuccess(Boolean success) {
+							currentQueueSize.decrementAndGet();
 							log.debug("[{}] onSuccess: {}", sessionId, success);
 						}
 					});
@@ -464,6 +481,15 @@ public class RTMPMinaConnection extends RTMPConnection implements RTMPMinaConnec
 			}
 			oName = null;
 		}
+	}
+
+	public int getExecutorQueueSizeToDropAudioPackets() {
+		return executorQueueSizeToDropAudioPackets;
+	}
+
+	public void setExecutorQueueSizeToDropAudioPackets(
+			int executorQueueSizeToDropAudioPackets) {
+		this.executorQueueSizeToDropAudioPackets = executorQueueSizeToDropAudioPackets;
 	}
 
 }
