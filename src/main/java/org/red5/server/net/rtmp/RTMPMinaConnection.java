@@ -26,6 +26,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+
+import org.red5.server.net.rtmp.message.Header;
 
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -35,23 +39,21 @@ import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.future.CloseFuture;
 import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.session.IoSession;
-import org.springframework.util.concurrent.ListenableFuture;
-import org.springframework.util.concurrent.ListenableFutureCallback;
-import org.springframework.util.concurrent.ListenableFutureTask;
 import org.red5.server.api.scope.IScope;
 import org.red5.server.jmx.mxbeans.RTMPMinaConnectionMXBean;
 import org.red5.server.net.rtmp.codec.RTMP;
 import org.red5.server.net.rtmp.event.ClientBW;
-import org.red5.server.net.rtmp.event.IRTMPEvent;
 import org.red5.server.net.rtmp.event.ServerBW;
 import org.red5.server.net.rtmp.message.Constants;
-import org.red5.server.net.rtmp.message.Header;
 import org.red5.server.net.rtmp.message.Packet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.task.TaskRejectedException;
 import org.springframework.jmx.export.annotation.ManagedResource;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.util.concurrent.ListenableFuture;
+import org.springframework.util.concurrent.ListenableFutureCallback;
+import org.springframework.util.concurrent.ListenableFutureTask;
 
 /**
  * Represents an RTMP connection using Mina.
@@ -80,7 +82,12 @@ public class RTMPMinaConnection extends RTMPConnection implements RTMPMinaConnec
 	protected int defaultClientBandwidth = 10000000;
 
 	protected boolean bandwidthDetection = true;
-
+	
+	private int executorQueueSizeToDropAudioPackets = 0;
+	
+	protected AtomicInteger currentQueueSize = new AtomicInteger();
+	protected AtomicLong packetSequence = new AtomicLong();
+	
 	/** Constructs a new RTMPMinaConnection. */
 	@ConstructorProperties(value = { "persistent" })
 	public RTMPMinaConnection() {
@@ -208,16 +215,42 @@ public class RTMPMinaConnection extends RTMPConnection implements RTMPMinaConnec
 		} else {
 			if (executor != null) {
 				try {
+					final long packetNumber = packetSequence.incrementAndGet();
+					
+					if(currentQueueSize.get() >= getExecutorQueueSizeToDropAudioPackets()) {
+						if(message.getHeader().getDataType() == Constants.TYPE_AUDIO_DATA){
+							/**
+							 * There's a backlog of messages in the queue. Flash might have
+							 * sent a burst of messages after a network congestion.
+							 * Throw away packets that we are able to discard.
+							 */
+							log.info("Queue threshold reached. Discarding packet: session=[{}], msgType=[{}], packetNum=[{}]", getSessionId(), getMessageType(message), packetNumber);
+							return;
+						}
+					}
+					
 					ReceivedMessageTask task = new ReceivedMessageTask(sessionId, message, handler, this);
 					task.setMaxHandlingTimeout(maxHandlingTimeout);
 					ListenableFuture<Boolean> future = (ListenableFuture<Boolean>) executor.submitListenable(new ListenableFutureTask<Boolean>(task));
+					currentQueueSize.incrementAndGet();
+					
+					final Packet sentMessage = message;
+					final Long startTime = System.currentTimeMillis();
+					
 					future.addCallback(new ListenableFutureCallback<Boolean>() {
+						private int getProcessingTime() {
+							return (int)(System.currentTimeMillis() - startTime);
+						}
 						public void onFailure(Throwable t) {
-							log.warn("[{}] onFailure", sessionId, t);
+							currentQueueSize.decrementAndGet();
+							// Failed to process message.
+							log.debug("onFailure - session: {}, msgtype: {}, processingTime: {}, packetNum: {}", sessionId, getMessageType(sentMessage), getProcessingTime(), packetNumber);
 						}
 
 						public void onSuccess(Boolean success) {
-							log.debug("[{}] onSuccess: {}", sessionId, success);
+							currentQueueSize.decrementAndGet();
+							// Message successfully processed.
+							log.debug("onSuccess - session: {}, msgType: {}, processingTime: {}, packetNum: {}", sessionId, getMessageType(sentMessage), getProcessingTime(), packetNumber);
 						}
 					});
 				} catch (TaskRejectedException tre) {
@@ -228,7 +261,7 @@ public class RTMPMinaConnection extends RTMPConnection implements RTMPMinaConnec
 					log.info("Incoming message rejected on session=[{}], messageType=[{}]", getSessionId(), getMessageType(message));
 					log.info("Rejected message: {} on {}", message, sessionId);
 				} catch (Exception e) {
-					log.warn("Incoming message handling failed on session=[{}], messageType=[{}]", new Object[] { getSessionId(), getMessageType(message) }, e);
+					log.info("Incoming message handling failed on session=[{}], messageType=[{}]", getSessionId(), getMessageType(message));
 					if (log.isDebugEnabled()) {
 						log.debug("Execution rejected on {} - {}", getSessionId(), state.states[getStateCode()]);
 						log.debug("Lock permits - decode: {} encode: {}", decoderLock.availablePermits(), encoderLock.availablePermits());
@@ -519,4 +552,13 @@ public class RTMPMinaConnection extends RTMPConnection implements RTMPMinaConnec
 		}
 	}
 
+	public int getExecutorQueueSizeToDropAudioPackets() {
+		return executorQueueSizeToDropAudioPackets;
+	}
+
+	public void setExecutorQueueSizeToDropAudioPackets(
+			int executorQueueSizeToDropAudioPackets) {
+		this.executorQueueSizeToDropAudioPackets = executorQueueSizeToDropAudioPackets;
+	}
+	
 }

@@ -1373,7 +1373,6 @@ public abstract class RTMPConnection extends BaseConnection implements IStreamCa
 									onInactive();
 								}
 							} else {
-
 								// client didn't send response to ping command and didn't sent data for too long, disconnect
 								long lastPingTime = lastPingSentOn.get();
 								long lastPongTime = lastPongReceivedOn.get();
