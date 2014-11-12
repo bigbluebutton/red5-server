@@ -27,7 +27,10 @@ import java.util.Collections;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.red5.server.net.rtmp.message.Header;
+
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import javax.management.StandardMBean;
@@ -82,7 +85,8 @@ public class RTMPMinaConnection extends RTMPConnection implements RTMPMinaConnec
 	private int executorQueueSizeToDropAudioPackets = 0;
 	
 	protected AtomicInteger currentQueueSize = new AtomicInteger();
-
+	protected AtomicLong packetSequence = new AtomicLong();
+	
 	/** Constructs a new RTMPMinaConnection. */
 	@ConstructorProperties(value = { "persistent" })
 	public RTMPMinaConnection() {
@@ -210,9 +214,16 @@ public class RTMPMinaConnection extends RTMPConnection implements RTMPMinaConnec
 		} else {
 			if (executor != null) {
 				try {
+					final long packetNumber = packetSequence.incrementAndGet();
+					
 					if(currentQueueSize.get() >= getExecutorQueueSizeToDropAudioPackets()) {
 						if(message.getHeader().getDataType() == Constants.TYPE_AUDIO_DATA){
-							log.warn("Discarding audio to prevent filling up the queue");
+							/**
+							 * There's a backlog of messages in the queue. Flash might have
+							 * sent a burst of messages after a network congestion.
+							 * Throw away packets that we are able to discard.
+							 */
+							log.info("Queue threshold reached. Discarding packet: session=[{}], msgType=[{}], packetNum=[{}]", getSessionId(), getMessageType(message), packetNumber);
 							return;
 						}
 					}
@@ -222,15 +233,23 @@ public class RTMPMinaConnection extends RTMPConnection implements RTMPMinaConnec
 					ListenableFuture<Boolean> future = (ListenableFuture<Boolean>) executor.submitListenable(new ListenableFutureTask<Boolean>(task));
 					currentQueueSize.incrementAndGet();
 					
+					final Packet sentMessage = message;
+					final Long startTime = System.currentTimeMillis();
+					
 					future.addCallback(new ListenableFutureCallback<Boolean>() {
+						private int getProcessingTime() {
+							return (int)(System.currentTimeMillis() - startTime);
+						}
 						public void onFailure(Throwable t) {
 							currentQueueSize.decrementAndGet();
-							log.warn("[{}] onFailure", sessionId, t);
+							// Failed to process message.
+							log.debug("onFailure - session: {}, msgtype: {}, processingTime: {}, packetNum: {}", sessionId, getMessageType(sentMessage), getProcessingTime(), packetNumber);
 						}
 
 						public void onSuccess(Boolean success) {
 							currentQueueSize.decrementAndGet();
-							log.debug("[{}] onSuccess: {}", sessionId, success);
+							// Message successfully processed.
+							log.debug("onSuccess - session: {}, msgType: {}, processingTime: {}, packetNum: {}", sessionId, getMessageType(sentMessage), getProcessingTime(), packetNumber);
 						}
 					});
 				} catch (Exception e) {
@@ -533,5 +552,5 @@ public class RTMPMinaConnection extends RTMPConnection implements RTMPMinaConnec
 			int executorQueueSizeToDropAudioPackets) {
 		this.executorQueueSizeToDropAudioPackets = executorQueueSizeToDropAudioPackets;
 	}
-
+	
 }
