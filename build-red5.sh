@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -x
+set -e
 
 RED5_SRC=$(pwd)
 RED5_VER=1.0.4-SNAPSHOT
@@ -10,7 +11,7 @@ echo "Preparing build"
 mvn clean
 
 echo "mvn bootstrap install"
-mvn bootstrap install
+mvn -Dmaven.test.skip=true 
 echo "mvn dependencies"
 mvn dependency:copy-dependencies
 echo "mvn package"
