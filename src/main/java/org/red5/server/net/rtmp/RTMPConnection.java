@@ -62,6 +62,8 @@ import org.red5.server.net.rtmp.event.Notify;
 import org.red5.server.net.rtmp.event.Ping;
 import org.red5.server.net.rtmp.event.ServerBW;
 import org.red5.server.net.rtmp.event.VideoData;
+import org.red5.server.net.rtmp.message.Constants;
+import org.red5.server.net.rtmp.message.Header;
 import org.red5.server.net.rtmp.message.Packet;
 import org.red5.server.net.rtmp.status.Status;
 import org.red5.server.service.Call;
@@ -77,8 +79,12 @@ import org.red5.server.stream.StreamService;
 import org.red5.server.util.ScopeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.task.TaskRejectedException;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
+import org.springframework.util.concurrent.ListenableFuture;
+import org.springframework.util.concurrent.ListenableFutureCallback;
+import org.springframework.util.concurrent.ListenableFutureTask;
 
 /**
  * RTMP connection. Stores information about client streams, data transfer channels, pending RPC calls, bandwidth configuration, 
@@ -1120,13 +1126,105 @@ public abstract class RTMPConnection extends BaseConnection implements IStreamCa
 		updateBytesRead();
 	}
 
+	private String getMessageType(Packet packet) {
+		final Header header = packet.getHeader();
+		final byte headerDataType = header.getDataType();
+		return	messageTypeToName(headerDataType);
+	}
+	
+    public String messageTypeToName(byte headerDataType) {
+		switch (headerDataType) {
+			case Constants.TYPE_AGGREGATE:
+				return "TYPE_AGGREGATE";
+			case Constants.TYPE_AUDIO_DATA:
+				return "TYPE_AUDIO_DATA";
+			case Constants.TYPE_VIDEO_DATA:
+				return "TYPE_VIDEO_DATA";
+			case Constants.TYPE_FLEX_SHARED_OBJECT:
+				return "TYPE_FLEX_SHARED_OBJECT";
+			case Constants.TYPE_SHARED_OBJECT:
+				return "TYPE_SHARED_OBJECT";
+			case Constants.TYPE_INVOKE:
+				return "TYPE_INVOKE";
+			case Constants.TYPE_FLEX_MESSAGE:
+				return "TYPE_FLEX_MESSAGE";
+			case Constants.TYPE_NOTIFY: 
+				return "TYPE_NOTIFY";
+			case Constants.TYPE_FLEX_STREAM_SEND:
+				return "TYPE_FLEX_STREAM_SEND";
+			case Constants.TYPE_PING:
+				return "TYPE_PING";
+			case Constants.TYPE_BYTES_READ:
+				return "TYPE_BYTES_READ";
+			case Constants.TYPE_CHUNK_SIZE:
+				return "TYPE_CHUNK_SIZE";
+			case Constants.TYPE_CLIENT_BANDWIDTH: 
+				return "TYPE_CLIENT_BANDWIDTH";
+			case Constants.TYPE_SERVER_BANDWIDTH: 
+				return "TYPE_SERVER_BANDWIDTH";				
+    		default:
+    			return "UNKNOWN [" + headerDataType + "]";
+    				
+    	}   	
+    }
+ 
+    
 	/**
-	 * Handle the incoming message. Override this method to handle incoming messages.
+	 * Handle the incoming message.
 	 * 
 	 * @param message
 	 */
+	@SuppressWarnings("unchecked")
 	public void handleMessageReceived(Packet message) {
-		log.debug("handleMessageReceived - {}", sessionId);
+		log.trace("handleMessageReceived - {}", sessionId);
+		final byte dataType = message.getHeader().getDataType();
+		// route these types outside the executor
+		switch(dataType) {
+		case Constants.TYPE_PING: 
+		case Constants.TYPE_ABORT: 
+		case Constants.TYPE_BYTES_READ:
+		case Constants.TYPE_CHUNK_SIZE:
+		case Constants.TYPE_CLIENT_BANDWIDTH:
+		case Constants.TYPE_SERVER_BANDWIDTH:
+			// pass message to the handler
+			try {
+				handler.messageReceived(this, message);
+			} catch (Exception e) {
+				log.error("Error processing received message {}", sessionId, e);
+			}
+			break;
+		default:
+			if (executor != null) {
+				try {
+					ReceivedMessageTask task = new ReceivedMessageTask(sessionId, message, handler, this);
+					task.setMaxHandlingTimeout(maxHandlingTimeout);
+					ListenableFuture<Boolean> future = (ListenableFuture<Boolean>) executor.submitListenable(new ListenableFutureTask<Boolean>(task));
+					future.addCallback(new ListenableFutureCallback<Boolean>() {
+						public void onFailure(Throwable t) {
+							log.warn("[{}] onFailure", sessionId, t);
+						}
+
+						public void onSuccess(Boolean success) {
+							log.debug("[{}] onSuccess: {}", sessionId, success);
+						}
+					});
+				} catch (TaskRejectedException tre) {
+					Throwable[] suppressed = tre.getSuppressed();
+					for (Throwable t : suppressed) {
+						log.warn("Suppressed exception on {}", sessionId, t);
+					}
+					log.info("Rejected message: {} on {}", message, sessionId);
+				} catch (Exception e) {
+					log.warn("Incoming message handling failed on {}", getSessionId(), e);
+					if (log.isDebugEnabled()) {
+						log.debug("Execution rejected on {} - {}", getSessionId(), state.states[getStateCode()]);
+						log.debug("Lock permits - decode: {} encode: {}", decoderLock.availablePermits(), encoderLock.availablePermits());
+					}
+				}
+			} else {
+				log.warn("Executor is null on {} state: {}", getSessionId(), state.states[getStateCode()]);
+			}		
+		}
 	}
 
 	/**
