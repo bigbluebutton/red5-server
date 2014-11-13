@@ -341,7 +341,7 @@ public class FileConsumer implements Constants, IPushableConsumer, IPipeConnecti
 					//wait n seconds for a result from the last writer
 					writeResult = writerFuture.get(timeout, TimeUnit.MILLISECONDS);
 				} catch (Exception e) {
-					log.warn("Exception waiting for write result. Timeout: {}ms", timeout, e);
+					log.warn("Exception waiting for writer on file=[{}]. Timeout: {}ms", file.getName(), timeout, e);
 					return false;
 				}
 			}
@@ -451,7 +451,7 @@ public class FileConsumer implements Constants, IPushableConsumer, IPipeConnecti
 				try {
 					writerFuture.get();
 				} catch (Exception e) {
-					log.warn("Exception waiting for write result on uninit", e);
+					log.warn("Exception waiting for write result on uninit. file=[{}]", file.getName(), e);
 				}
 				if (writerFuture.cancel(false)) {
 					log.debug("Future completed");

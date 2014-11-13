@@ -444,7 +444,7 @@ public class RTMPMinaConnection extends RTMPConnection implements RTMPMinaConnec
 	public void write(Packet out) {
 		if (ioSession != null) {
 			final Semaphore lock = getLock();
-			log.trace("Write lock wait count: {} closed: {}", lock.getQueueLength(), isClosed());
+			log.trace("Write lock wait count: session=[{}], lockSize=[{}] closed: {}", getSessionId(), lock.getQueueLength(), isClosed());
 			while (!isClosed()) {
 				boolean acquired = false;
 				try {
@@ -456,7 +456,7 @@ public class RTMPMinaConnection extends RTMPConnection implements RTMPMinaConnec
 						break;
 					}
 				} catch (InterruptedException e) {
-					log.warn("Interrupted while waiting for write lock. State: {}", state.states[state.getState()], e);
+					log.warn("Interrupted while waiting for write lock. session=[{}], state: {}", getSessionId(), state.states[state.getState()], e);
 					String exMsg = e.getMessage();
 					// if the exception cause is null break out of here to
 					// prevent looping until closed
@@ -488,7 +488,7 @@ public class RTMPMinaConnection extends RTMPConnection implements RTMPMinaConnec
 						break;
 					}
 				} catch (InterruptedException e) {
-					log.warn("Interrupted while waiting for write lock (writeRaw). State: {}", state.states[state.getState()], e);
+					log.warn("Interrupted while waiting for write lock (writeRaw). session=[{}], state: {}", getSessionId(), state.states[state.getState()], e);
 					String exMsg = e.getMessage();
 					// if the exception cause is null break out of here to
 					// prevent looping until closed
