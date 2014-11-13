@@ -62,6 +62,8 @@ import org.red5.server.net.rtmp.event.Notify;
 import org.red5.server.net.rtmp.event.Ping;
 import org.red5.server.net.rtmp.event.ServerBW;
 import org.red5.server.net.rtmp.event.VideoData;
+import org.red5.server.net.rtmp.message.Constants;
+import org.red5.server.net.rtmp.message.Header;
 import org.red5.server.net.rtmp.message.Packet;
 import org.red5.server.net.rtmp.status.Status;
 import org.red5.server.service.Call;
@@ -77,8 +79,12 @@ import org.red5.server.stream.StreamService;
 import org.red5.server.util.ScopeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.task.TaskRejectedException;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
+import org.springframework.util.concurrent.ListenableFuture;
+import org.springframework.util.concurrent.ListenableFutureCallback;
+import org.springframework.util.concurrent.ListenableFutureTask;
 
 /**
  * RTMP connection. Stores information about client streams, data transfer channels, pending RPC calls, bandwidth configuration, 
@@ -213,7 +219,9 @@ public abstract class RTMPConnection extends BaseConnection implements IStreamCa
 	 */
 	private int maxHandshakeTimeout = 5000;
 
-	// maximum time allowed to process received message
+	/**
+	 * Maximum time in milliseconds allowed to process received message
+	 */
 	protected long maxHandlingTimeout = 500L;
 
 	/**
@@ -266,6 +274,22 @@ public abstract class RTMPConnection extends BaseConnection implements IStreamCa
 	 * Closing flag
 	 */
 	private final AtomicBoolean closing = new AtomicBoolean(false);	
+	
+	/**
+	 * Packet sequence number
+	 * */
+	private AtomicLong packetSequence = new AtomicLong();
+	
+	/**
+	 * Specify the size of queue that will trigger audio packet dropping, disabled if it's 0
+	 * */
+	private Integer executorQueueSizeToDropAudioPackets = 0;
+	
+	/**
+	 * Keep track of current queue size
+	 * */
+	private AtomicInteger currentQueueSize = new AtomicInteger();
+	
 	
 	/**
 	 * Creates anonymous RTMP connection without scope.
@@ -351,9 +375,10 @@ public abstract class RTMPConnection extends BaseConnection implements IStreamCa
 	 */
 	public void open() {
 		// add the session id to the prefix		
-		executor.setThreadNamePrefix(String.format("RTMPExecutor#%s-", sessionId));
-		executor.setRejectedExecutionHandler(new ThreadPoolExecutor.DiscardOldestPolicy());
-		executor.setAllowCoreThreadTimeOut(true);
+		executor.setThreadNamePrefix(String.format("RTMPConnectionExecutor#%s-", sessionId));
+		//executor.setRejectedExecutionHandler(new ThreadPoolExecutor.DiscardOldestPolicy());
+		//executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+		//executor.setAllowCoreThreadTimeOut(true);
 		executor.setDaemon(true);
 		executor.setWaitForTasksToCompleteOnShutdown(true);
 		if (log.isTraceEnabled()) {
@@ -554,6 +579,15 @@ public abstract class RTMPConnection extends BaseConnection implements IStreamCa
 		return idle;
 	}
 
+	/**
+	 * Returns whether or not the connection is disconnected.
+	 * 
+	 * @return true if connection state is RTMP.STATE_DISCONNECTED, false otherwise
+	 */
+	public boolean isDisconnected() {
+		return state.getState() == RTMP.STATE_DISCONNECTED;
+	}	
+	
 	/**
 	 * Creates output stream object from stream id. Output stream consists of audio, data and video channels.
 	 * 
@@ -1110,13 +1144,130 @@ public abstract class RTMPConnection extends BaseConnection implements IStreamCa
 		updateBytesRead();
 	}
 
+	private String getMessageType(Packet packet) {
+		final Header header = packet.getHeader();
+		final byte headerDataType = header.getDataType();
+		return	messageTypeToName(headerDataType);
+	}
+	
+    public String messageTypeToName(byte headerDataType) {
+		switch (headerDataType) {
+			case Constants.TYPE_AGGREGATE:
+				return "TYPE_AGGREGATE";
+			case Constants.TYPE_AUDIO_DATA:
+				return "TYPE_AUDIO_DATA";
+			case Constants.TYPE_VIDEO_DATA:
+				return "TYPE_VIDEO_DATA";
+			case Constants.TYPE_FLEX_SHARED_OBJECT:
+				return "TYPE_FLEX_SHARED_OBJECT";
+			case Constants.TYPE_SHARED_OBJECT:
+				return "TYPE_SHARED_OBJECT";
+			case Constants.TYPE_INVOKE:
+				return "TYPE_INVOKE";
+			case Constants.TYPE_FLEX_MESSAGE:
+				return "TYPE_FLEX_MESSAGE";
+			case Constants.TYPE_NOTIFY: 
+				return "TYPE_NOTIFY";
+			case Constants.TYPE_FLEX_STREAM_SEND:
+				return "TYPE_FLEX_STREAM_SEND";
+			case Constants.TYPE_PING:
+				return "TYPE_PING";
+			case Constants.TYPE_BYTES_READ:
+				return "TYPE_BYTES_READ";
+			case Constants.TYPE_CHUNK_SIZE:
+				return "TYPE_CHUNK_SIZE";
+			case Constants.TYPE_CLIENT_BANDWIDTH: 
+				return "TYPE_CLIENT_BANDWIDTH";
+			case Constants.TYPE_SERVER_BANDWIDTH: 
+				return "TYPE_SERVER_BANDWIDTH";				
+    		default:
+    			return "UNKNOWN [" + headerDataType + "]";
+    				
+    	}   	
+    }
+    
 	/**
-	 * Handle the incoming message. Override this method to handle incoming messages.
+	 * Handle the incoming message.
 	 * 
 	 * @param message
 	 */
+	@SuppressWarnings("unchecked")
 	public void handleMessageReceived(Packet message) {
-		log.debug("handleMessageReceived - {}", sessionId);
+		log.trace("handleMessageReceived - {}", sessionId);
+		final byte dataType = message.getHeader().getDataType();
+		// route these types outside the executor
+		switch(dataType) {
+		case Constants.TYPE_PING: 
+		case Constants.TYPE_ABORT: 
+		case Constants.TYPE_BYTES_READ:
+		case Constants.TYPE_CHUNK_SIZE:
+		case Constants.TYPE_CLIENT_BANDWIDTH:
+		case Constants.TYPE_SERVER_BANDWIDTH:
+			// pass message to the handler
+			try {
+				handler.messageReceived(this, message);
+			} catch (Exception e) {
+				log.error("Error processing received message {}", sessionId, e);
+			}
+			break;
+		default:
+			if (executor != null) {
+				try {
+					final long packetNumber = packetSequence.incrementAndGet();
+					
+					if(executorQueueSizeToDropAudioPackets > 0 && currentQueueSize.get() >= executorQueueSizeToDropAudioPackets) {
+						if(message.getHeader().getDataType() == Constants.TYPE_AUDIO_DATA){
+							/**
+							* There's a backlog of messages in the queue. Flash might have 
+							* sent a burst of messages after a network congestion.
+							* Throw away packets that we are able to discard.
+							*/
+							log.info("Queue threshold reached. Discarding packet: session=[{}], msgType=[{}], packetNum=[{}]", getSessionId(), getMessageType(message), packetNumber);
+							return ;
+						}
+					}
+					ReceivedMessageTask task = new ReceivedMessageTask(sessionId, message, handler, this);
+					task.setMaxHandlingTimeout(maxHandlingTimeout);
+					packetSequence.incrementAndGet();
+					final Packet sentMessage = message;
+					final Long startTime = System.nanoTime();
+					ListenableFuture<Boolean> future = (ListenableFuture<Boolean>) executor.submitListenable(new ListenableFutureTask<Boolean>(task));
+					currentQueueSize.incrementAndGet();
+					future.addCallback(new ListenableFutureCallback<Boolean>() {
+						private int getProcessingTime() {
+							return (int) ((System.nanoTime() - startTime)/1000);
+						}
+						
+						public void onFailure(Throwable t) {
+							currentQueueSize.decrementAndGet();
+							
+							if(log.isWarnEnabled())
+								log.warn("onFailure - session: {}, msgtype: {}, processingTime: {}, packetNum: {}", sessionId, getMessageType(sentMessage), getProcessingTime(), packetNumber);
+						}
+
+						public void onSuccess(Boolean success) {
+							currentQueueSize.decrementAndGet();
+							if(log.isDebugEnabled())
+								log.debug("onSuccess - session: {}, msgType: {}, processingTime: {}, packetNum: {}", sessionId, getMessageType(sentMessage), getProcessingTime(), packetNumber);
+						}
+					});
+				} catch (TaskRejectedException tre) {
+					Throwable[] suppressed = tre.getSuppressed();
+					for (Throwable t : suppressed) {
+						log.warn("Suppressed exception on {}", sessionId, t);
+					}
+					log.info("Rejected message: {} on {}", message, sessionId);
+				} catch (Exception e) {
+					log.info("Incoming message handling failed on session=[{}], messageType=[{}]", getSessionId(), message);
+					if (log.isDebugEnabled()) {
+						log.debug("Execution rejected on {} - {}", getSessionId(), state.states[getStateCode()]);
+						log.debug("Lock permits - decode: {} encode: {}", decoderLock.availablePermits(), encoderLock.availablePermits());
+					}
+				}
+			} else {
+				log.warn("Executor is null on {} state: {}", getSessionId(), state.states[getStateCode()]);
+			}		
+		}
 	}
 
 	/**
@@ -1204,7 +1355,7 @@ public abstract class RTMPConnection extends BaseConnection implements IStreamCa
 	public void pingReceived(Ping pong) {
 		long now = System.currentTimeMillis();
 		long previousPingValue = (int) (lastPingSentOn.get() & 0xffffffff);
-		log.debug("Pong from {} at {} with value {}, previous received at {}", new Object[] { getSessionId(), now, pong.getValue2(), previousPingValue });
+		log.debug("Pong Rx: session=[{}] at {} with value {}, previous received at {}", new Object[] { getSessionId(), now, pong.getValue2(), previousPingValue });
 		if (pong.getValue2() == previousPingValue) {
 			lastPingRoundTripTime.set((int) (now & 0xffffffff) - pong.getValue2());
 			log.debug("Ping response session=[{}], RTT=[{} ms]", new Object[] { getSessionId(), lastPingRoundTripTime.get() });
@@ -1324,6 +1475,14 @@ public abstract class RTMPConnection extends BaseConnection implements IStreamCa
 			Object[] args = new Object[] { getClass().getSimpleName(), getRemoteAddress(), getReadBytes(), getWrittenBytes(), getSessionId(), getState().states[getStateCode()] };
 			return String.format("%1$s from %2$s (in: %3$s out: %4$s) session: %5$s state: %6$s", args);
 		}
+	}
+
+	/**
+	 * Specify the size of queue that will trigger audio packet dropping, disabled if it's 0
+	 * */
+	public void setExecutorQueueSizeToDropAudioPackets(
+			Integer executorQueueSizeToDropAudioPackets) {
+		this.executorQueueSizeToDropAudioPackets = executorQueueSizeToDropAudioPackets;
 	}
 
 	/**

@@ -102,9 +102,15 @@
         <!-- Bandwidth detection. If "false" the server will NOT initiate a check -->
         <property name="bandwidthDetection" value="${rtmp.bandwidth_detection}" />
         <!-- Maximum time allowed for a single RTMP packet to be processed -->
+<<<<<<< HEAD
         <property name="maxHandlingTimeout" value="${rtmp.max_handling_time}" />   
         <!-- Used to drop audio received when queue is almost full -->
         <property name="executorQueueSizeToDropAudioPackets" value="${rtmp.executor.queue_size_to_drop_audio_packets}" />     
+=======
+        <property name="maxHandlingTimeout" value="${rtmp.max_handling_time}" />
+        <!-- Specify the size of queue that will trigger audio packet dropping, disabled if it's 0 -->
+         <property name="executorQueueSizeToDropAudioPackets" value="${rtmp.executor.queue_size_to_drop_audio_packets}" />
+>>>>>>> change-keepalive
 	</bean>
 	
 	<!-- RTMPT -->

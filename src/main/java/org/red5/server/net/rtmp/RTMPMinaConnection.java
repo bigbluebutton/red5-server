@@ -26,11 +26,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-
-import org.red5.server.net.rtmp.message.Header;
-
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import javax.management.StandardMBean;
@@ -44,7 +39,6 @@ import org.red5.server.jmx.mxbeans.RTMPMinaConnectionMXBean;
 import org.red5.server.net.rtmp.codec.RTMP;
 import org.red5.server.net.rtmp.event.ClientBW;
 import org.red5.server.net.rtmp.event.ServerBW;
-import org.red5.server.net.rtmp.message.Constants;
 import org.red5.server.net.rtmp.message.Packet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -81,11 +75,6 @@ public class RTMPMinaConnection extends RTMPConnection implements RTMPMinaConnec
 	protected int defaultClientBandwidth = 10000000;
 
 	protected boolean bandwidthDetection = true;
-	
-	private int executorQueueSizeToDropAudioPackets = 0;
-	
-	protected AtomicInteger currentQueueSize = new AtomicInteger();
-	protected AtomicLong packetSequence = new AtomicLong();
 	
 	/** Constructs a new RTMPMinaConnection. */
 	@ConstructorProperties(value = { "persistent" })
@@ -154,120 +143,6 @@ public class RTMPMinaConnection extends RTMPConnection implements RTMPMinaConnec
 		}
 		// de-register with JMX
 		unregisterJMX();
-	}
-
-	private String getMessageType(Packet packet) {
-		final Header header = packet.getHeader();
-		final byte headerDataType = header.getDataType();
-		return	messageTypeToName(headerDataType);
-	}
-	
-    public String messageTypeToName(byte headerDataType) {
-		switch (headerDataType) {
-			case Constants.TYPE_AGGREGATE:
-				return "TYPE_AGGREGATE";
-			case Constants.TYPE_AUDIO_DATA:
-				return "TYPE_AUDIO_DATA";
-			case Constants.TYPE_VIDEO_DATA:
-				return "TYPE_VIDEO_DATA";
-			case Constants.TYPE_FLEX_SHARED_OBJECT:
-				return "TYPE_FLEX_SHARED_OBJECT";
-			case Constants.TYPE_SHARED_OBJECT:
-				return "TYPE_SHARED_OBJECT";
-			case Constants.TYPE_INVOKE:
-				return "TYPE_INVOKE";
-			case Constants.TYPE_FLEX_MESSAGE:
-				return "TYPE_FLEX_MESSAGE";
-			case Constants.TYPE_NOTIFY: 
-				return "TYPE_NOTIFY";
-			case Constants.TYPE_FLEX_STREAM_SEND:
-				return "TYPE_FLEX_STREAM_SEND";
-			case Constants.TYPE_PING:
-				return "TYPE_PING";
-			case Constants.TYPE_BYTES_READ:
-				return "TYPE_BYTES_READ";
-			case Constants.TYPE_CHUNK_SIZE:
-				return "TYPE_CHUNK_SIZE";
-			case Constants.TYPE_CLIENT_BANDWIDTH: 
-				return "TYPE_CLIENT_BANDWIDTH";
-			case Constants.TYPE_SERVER_BANDWIDTH: 
-				return "TYPE_SERVER_BANDWIDTH";				
-    		default:
-    			return "UNKNOWN [" + headerDataType + "]";
-    				
-    	}   	
-    }
-    
-	/** {@inheritDoc} */
-	@SuppressWarnings({ "unchecked" })
-	@Override
-	public void handleMessageReceived(Packet message) {
-		log.trace("handleMessageReceived - {}", sessionId);
-		// route ping outside of the executor
-		if (message.getHeader().getDataType() == Constants.TYPE_PING) {
-			// pass message to the handler
-			try {
-				handler.messageReceived(this, message);
-			} catch (Exception e) {
-				log.error("Error processing received message {}", sessionId, e);
-			}
-		} else {
-			if (executor != null) {
-				try {
-					final long packetNumber = packetSequence.incrementAndGet();
-					
-					if(currentQueueSize.get() >= getExecutorQueueSizeToDropAudioPackets()) {
-						if(message.getHeader().getDataType() == Constants.TYPE_AUDIO_DATA){
-							/**
-							 * There's a backlog of messages in the queue. Flash might have
-							 * sent a burst of messages after a network congestion.
-							 * Throw away packets that we are able to discard.
-							 */
-							log.info("Queue threshold reached. Discarding packet: session=[{}], msgType=[{}], packetNum=[{}]", getSessionId(), getMessageType(message), packetNumber);
-							return;
-						}
-					}
-					
-					ReceivedMessageTask task = new ReceivedMessageTask(sessionId, message, handler, this);
-					task.setMaxHandlingTimeout(maxHandlingTimeout);
-					ListenableFuture<Boolean> future = (ListenableFuture<Boolean>) executor.submitListenable(new ListenableFutureTask<Boolean>(task));
-					currentQueueSize.incrementAndGet();
-					
-					final Packet sentMessage = message;
-					final Long startTime = System.currentTimeMillis();
-					
-					future.addCallback(new ListenableFutureCallback<Boolean>() {
-						private int getProcessingTime() {
-							return (int)(System.currentTimeMillis() - startTime);
-						}
-						public void onFailure(Throwable t) {
-							currentQueueSize.decrementAndGet();
-							// Failed to process message.
-							log.debug("onFailure - session: {}, msgtype: {}, processingTime: {}, packetNum: {}", sessionId, getMessageType(sentMessage), getProcessingTime(), packetNumber);
-						}
-
-						public void onSuccess(Boolean success) {
-							currentQueueSize.decrementAndGet();
-							// Message successfully processed.
-							log.debug("onSuccess - session: {}, msgType: {}, processingTime: {}, packetNum: {}", sessionId, getMessageType(sentMessage), getProcessingTime(), packetNumber);
-						}
-					});
-				} catch (Exception e) {
-					log.info("Incoming message handling failed on session=[{}], messageType=[{}]", getSessionId(), getMessageType(message));
-					if (log.isDebugEnabled()) {
-						log.debug("Execution rejected on {} - {}", getSessionId(), state.states[getStateCode()]);
-						log.debug("Lock permits - decode: {} encode: {}", decoderLock.availablePermits(), encoderLock.availablePermits());
-					}
-					// ensure the connection is not closing and if it is drop
-					// the runnable
-					// if (state.getState() == RTMP.STATE_CONNECTED) {
-					// onInactive();
-					// }
-				}
-			} else {
-				log.warn("Executor is null on {} state: {}", getSessionId(), state.states[getStateCode()]);
-			}
-		}
 	}
 
 	/**
@@ -542,15 +417,6 @@ public class RTMPMinaConnection extends RTMPConnection implements RTMPMinaConnec
 			}
 			oName = null;
 		}
-	}
-
-	public int getExecutorQueueSizeToDropAudioPackets() {
-		return executorQueueSizeToDropAudioPackets;
-	}
-
-	public void setExecutorQueueSizeToDropAudioPackets(
-			int executorQueueSizeToDropAudioPackets) {
-		this.executorQueueSizeToDropAudioPackets = executorQueueSizeToDropAudioPackets;
 	}
 	
 }
