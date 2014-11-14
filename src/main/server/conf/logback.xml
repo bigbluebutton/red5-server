@@ -50,6 +50,14 @@
        <level value="INFO" />
   </logger>
 
+  <logger name="org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler">
+       <level value="WARN" />
+  </logger>
+  
+    <logger name="org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor">
+       <level value="WARN" />
+  </logger>
+  
 	<logger name="org.springframework">
 		<level value="INFO" />
 	</logger>

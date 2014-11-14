@@ -1247,15 +1247,16 @@ public abstract class RTMPConnection extends BaseConnection implements IStreamCa
 			if (executor != null) {
 				try {
 					final long packetNumber = packetSequence.incrementAndGet();
-					
-					if (executorQueueSizeToDropAudioPackets > 0 && currentQueueSize.get() >= executorQueueSizeToDropAudioPackets) {
+					int curQSize = currentQueueSize.get();
+					if (executorQueueSizeToDropAudioPackets > 0 && curQSize >= executorQueueSizeToDropAudioPackets) {
 						if (message.getHeader().getDataType() == Constants.TYPE_AUDIO_DATA){
 							/**
 							* There's a backlog of messages in the queue. Flash might have 
 							* sent a burst of messages after a network congestion.
 							* Throw away packets that we are able to discard.
 							*/
-							log.info("Queue threshold reached. Discarding packet: session=[{}], msgType=[{}], packetNum=[{}]", getSessionId(), getMessageType(message), packetNumber);
+							log.info("Queue threshold=[{}] reached (max=[{}]. Discarding packet: session=[{}], msgType=[{}], packetNum=[{}]", 
+									executorQueueSizeToDropAudioPackets, curQSize, getSessionId(), getMessageType(message), packetNumber);
 							return ;
 						}
 					}
@@ -1275,13 +1276,15 @@ public abstract class RTMPConnection extends BaseConnection implements IStreamCa
 							currentQueueSize.decrementAndGet();
 							
 							if (log.isWarnEnabled())
-								log.warn("onFailure - session: {}, msgtype: {}, processingTime: {}, packetNum: {}", sessionId, getMessageType(sentMessage), getProcessingTime(), packetNumber);
+								log.warn("onFailure - session: {}, msgtype: {}, processingTime: {}, packetNum: {}", sessionId, 
+										getMessageType(sentMessage), getProcessingTime(), packetNumber);
 						}
 
 						public void onSuccess(Boolean success) {
 							currentQueueSize.decrementAndGet();
 							if (log.isDebugEnabled())
-								log.debug("onSuccess - session: {}, msgType: {}, processingTime: {}, packetNum: {}", sessionId, getMessageType(sentMessage), getProcessingTime(), packetNumber);
+								log.debug("onSuccess - session: {}, msgType: {}, processingTime: {}, packetNum: {}", sessionId, 
+										getMessageType(sentMessage), getProcessingTime(), packetNumber);
 						}
 					});
 				} catch (TaskRejectedException tre) {
@@ -1289,11 +1292,11 @@ public abstract class RTMPConnection extends BaseConnection implements IStreamCa
 					for (Throwable t : suppressed) {
 						log.warn("Suppressed exception on {}", sessionId, t);
 					}
-					log.info("Rejected message: {} on {}", message, sessionId);
+					log.info("Rejected message: session=[{}], msgType=[{}]", sessionId, getMessageType(message));
 				} catch (Exception e) {
-					log.info("Incoming message handling failed on session=[{}], messageType=[{}]", getSessionId(), message);
+					log.info("Incoming message handling failed: session=[{}], messageType=[{}]", getSessionId(), getMessageType(message));
 					if (log.isDebugEnabled()) {
-						log.debug("Execution rejected on {} - {}", getSessionId(), state.states[getStateCode()]);
+						log.debug("Execution rejected: session=[{}] - state=[{}]", getSessionId(), state.states[getStateCode()]);
 						log.debug("Lock permits - decode: {} encode: {}", decoderLock.availablePermits(), encoderLock.availablePermits());
 					}
 				}
