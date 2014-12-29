@@ -1,15 +1,28 @@
-red5-server
+red5-server - Red5 server core
 ===========
 
-Red5 server core
+Red5 is an Open Source Flash Server written in Java that supports:
 
-Some of the Red5 project information continues to reside on Google Code. Post new issues or wiki entries here. https://code.google.com/p/red5/
+ * Streaming Video (FLV, F4V, MP4, 3GP)
+ * Streaming Audio (MP3, F4A, M4A, AAC)
+ * Recording Client Streams (FLV and AVC+AAC in FLV container)
+ * Shared Objects
+ * Live Stream Publishing
+ * Remoting
+ * Protocols: RTMP, RTMPT, RTMPS, and RTMPE
+ * WebSocket (ws and wss)
+ * HLS
+ * RTSP (From Axis-type cameras)
+
+Some of the Red5 project information continues to reside on [Google Code](https://code.google.com/p/red5/). Post new issues or wiki entries here. 
 
 The Red5 users list may be found here: https://groups.google.com/forum/#!forum/red5interest
 
 Subreddit: http://www.reddit.com/r/red5
 
-Jenkins builds: https://builds.apache.org/view/M-R/view/OpenMeetings/job/Red5-server/ (Courtesy of Apache / OpenMeetings)
+Automatic builds (Courtesy of Apache / OpenMeetings): 
+ * [Red5](https://builds.apache.org/view/M-R/view/OpenMeetings/job/Red5-server/)
+ * [Windows Installer](https://builds.apache.org/view/M-R/view/OpenMeetings/job/red5-installer/)
 
 Latest version is <b>1.0.4-SNAPSHOT</b>
 
@@ -20,16 +33,18 @@ Current Releases
 <a href="https://mega.co.nz/#!JcNwyKab!Mk7aMIL_bAsRQgReBz0hIuDBs0vfncl901ZtLY3u0dM">Tarball</a> | 
 <a href="https://mega.co.nz/#!1BdigLgY!m_mGoSw5SEPh0Nf8qGGmGaUn3VXpIVrYHpVYCYNsK7Q">ZIP</a>
 
-<h4>Red5 1.0.2 Release (9 April 2014)</h4>
-<a href="https://mega.co.nz/#!FFsV0TIC!eEeGePK30nCv0xF5E7w_6S3b_z8Y9pjzMkp2-UgZTYk">Windows Java7</a> | 
-<a href="https://mega.co.nz/#!8EUFwAxR!qJjgtFCs5tY86ZDqolL_nL9SsWradm4BQeOugffZqqs">Tarball</a> | 
-<a href="https://mega.co.nz/#!QUNEiDoI!RhT8p660eJImIuI3kRhuZHfRWxtnZTSpp0-va2_wyrw">ZIP</a>
-
-<i>Scroll to the bottom of this page for older releases</i>
+[Previous releases](https://github.com/Red5/red5-server/blob/master/README.md#previous-releases)
 
 <i>Note on Bootstrap</i>
 
 The bootstrap and shutdown classes have been moved to the red5-service project; the dependency has been added to this projects pom.
+
+Maven Artifacts
+-----------------
+
+Releases are available at https://oss.sonatype.org/content/repositories/releases/org/red5/
+
+Snapshots are available at https://oss.sonatype.org/content/repositories/snapshots/org/red5/
 
 Stack Overflow
 --------------
@@ -45,21 +60,11 @@ mvn -Dmaven.test.skip=true install
 ```
 This will create the jars in the "target" directory of the workspace; this will also skip the unit tests.
 
-To download the dependencies, execute this:
+To package everything up (tarball/zip):
 ```
-mvn dependency:copy-dependencies
+mvn -Dmaven.test.skip=true clean package -P assemble
 ```
-This will download all the dependencies into the "target" directory under "dependency". The next command will package everything up:
-```
-mvn -Dmaven.test.skip=true -Dmaven.buildNumber.doUpdate=false package
-```
-Right now, this will skip the demos directory but I'm working on a fix. The xml nodes to copy the demos are in the
-```
-trunk/src/main/server/assembly/server.xml
-```
-and may be uncommented for a package build, if you have the entire svn tree checked out.
-
-To manually copy the "demos", go to http://red5.googlecode.com/svn/flash/trunk/deploy/ and collect all the files therein. Create a directory in your red5 install at this location 
+To manually copy the "demos" should they not exist in the packages, go to http://red5.googlecode.com/svn/flash/trunk/deploy/ and collect all the files therein. Create a directory in your red5 install at this location 
 ```
 red5/webapps/root/demos
 ```
@@ -80,6 +85,11 @@ mvn eclipse:eclipse
 
 Previous Releases
 -------------------
+
+<h4>Red5 1.0.2 Release (9 April 2014)</h4>
+<a href="https://mega.co.nz/#!FFsV0TIC!eEeGePK30nCv0xF5E7w_6S3b_z8Y9pjzMkp2-UgZTYk">Windows Java7</a> | 
+<a href="https://mega.co.nz/#!8EUFwAxR!qJjgtFCs5tY86ZDqolL_nL9SsWradm4BQeOugffZqqs">Tarball</a> | 
+<a href="https://mega.co.nz/#!QUNEiDoI!RhT8p660eJImIuI3kRhuZHfRWxtnZTSpp0-va2_wyrw">ZIP</a>
 
 <h4>Red5 1.0.2 Snapshot (18 April 2013)</h4>
 
