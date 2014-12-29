@@ -5,7 +5,7 @@
 set -x
 
 RED5_SRC=$(pwd)
-RED5_VER=1.0.4-SNAPSHOT
+RED5_VER=1.0.4-RELEASE
 WHOAMI=$(whoami)
 
 RED5_DIR=/usr/share/red5

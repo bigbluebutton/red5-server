@@ -4,7 +4,7 @@ set -x
 set -e
 
 RED5_SRC=$(pwd)
-RED5_VER=1.0.4-SNAPSHOT
+RED5_VER=1.0.4-RELEASE
 RED5_DIR=red5-server-${RED5_VER}
 
 echo "Preparing build"
@@ -15,7 +15,7 @@ mvn -Dmaven.test.skip=true
 echo "mvn dependencies"
 mvn dependency:copy-dependencies
 echo "mvn package"
-mvn -Dmaven.test.skip=true -Dmaven.buildNumber.doUpdate=false package
+mvn -Dmaven.test.skip=true clean package -P assemble
 
 cd $RED5_SRC/target
 echo "Extractring red5"
