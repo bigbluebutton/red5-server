@@ -1,14 +1,14 @@
 <?xml version="1.0" ?>
 <configuration>
-	<!-- Uncomment if you are using the logback plugin for eclipse
-	<consolePlugin/>
-	-->
-	<appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-		<encoder>
-			<pattern>[%p] [%thread] %logger - %msg%n</pattern>
-		</encoder>		
-	</appender>
-	
+  <!-- Uncomment if you are using the logback plugin for eclipse
+  <consolePlugin/>
+  -->
+  <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%d{"yyyy-MM-dd HH:mm:ss,SSSXXX"} [%thread] %logger{35} - %msg%n</pattern>
+    </encoder>
+  </appender>
+
   <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
     <File>log/red5.log</File>
     <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
@@ -17,10 +17,10 @@
       <MaxHistory>5</MaxHistory>
     </rollingPolicy>
     <layout class="ch.qos.logback.classic.PatternLayout">
-      <Pattern>%date [%thread] %-5level %logger{35} - %msg%n</Pattern>
+      <Pattern>%d{"yyyy-MM-dd HH:mm:ss,SSSXXX"} [%thread] %-5level %logger{35} - %msg%n</Pattern>
     </layout>
   </appender>
-  
+
   <appender name="ERRORFILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
     <File>log/error.log</File>
     <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
@@ -29,42 +29,42 @@
       <MaxHistory>5</MaxHistory>
     </rollingPolicy>
     <layout class="ch.qos.logback.classic.PatternLayout">
-      <Pattern>%date [%thread] %-5level %logger{35} - %msg%n</Pattern>
+      <Pattern>%d{"yyyy-MM-dd HH:mm:ss,SSSXXX"} [%thread] %-5level %logger{35} - %msg%n</Pattern>
     </layout>
-      <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-          <level>WARN</level>
-      </filter>
+    <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+      <level>WARN</level>
+    </filter>
     <encoder>
-      <pattern>%d{ISO8601} [%thread] %-5level %logger{35} - %msg%n</pattern>
-    </encoder>    
+      <pattern>%d{"yyyy-MM-dd HH:mm:ss,SSSXXX"} [%thread] %-5level %logger{35} - %msg%n</pattern>
+    </encoder>
   </appender>
   
-	<root>
-		<level value="INFO" />
-		<appender-ref ref="CONSOLE" />
-		<appender-ref ref="FILE" />
-		<appender-ref ref="ERRORFILE" />
-	</root>
+  <root>
+    <level value="INFO" />
+    <appender-ref ref="CONSOLE" />
+    <appender-ref ref="FILE" />
+    <appender-ref ref="ERRORFILE" />
+  </root>
 	
   <logger name="org.red5.server.net.rtmp.RTMPConnection">
-       <level value="INFO" />
+    <level value="INFO" />
   </logger>
 
   <logger name="org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler">
-       <level value="WARN" />
+    <level value="WARN" />
   </logger>
   
-    <logger name="org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor">
-       <level value="WARN" />
+  <logger name="org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor">
+    <level value="WARN" />
   </logger>
   
-	<logger name="org.springframework">
-		<level value="INFO" />
-	</logger>
-	<logger name="org.apache">
-		<level value="INFO" />
-	</logger>
-	<logger name="ch.qos">
-		<level value="WARN" />
-	</logger>
+  <logger name="org.springframework">
+    <level value="INFO" />
+  </logger>
+  <logger name="org.apache">
+    <level value="INFO" />
+  </logger>
+  <logger name="ch.qos">
+    <level value="WARN" />
+  </logger>
 </configuration>
