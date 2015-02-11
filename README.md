@@ -27,10 +27,13 @@ Automatic builds (Courtesy of Apache / OpenMeetings):
  * [Red5](https://builds.apache.org/view/M-R/view/OpenMeetings/job/Red5-server/)
  * [Windows Installer](https://builds.apache.org/view/M-R/view/OpenMeetings/job/red5-installer/)
 
-Latest version is <b>1.0.4-SNAPSHOT</b>
+Latest version is <b>1.0.5-RELEASE</b>
 
 [Latest Releases](https://github.com/Red5/red5-server/releases/latest)
 ----------------
+<h4>Red5 1.0.5 Release (7 February 2015)</h4>
+[Tarball &amp; ZIP](https://github.com/Red5/red5-server/releases/tag/v1.0.5-RELEASE) | [Windows] (https://mega.co.nz/#!cAVGCJJR!flZqMKTB9mcD1_nvbQ_xlG88ADTEkFk7-jtuGw2uNOc)
+
 <h4>Red5 1.0.4 Release (26 December 2014)</h4>
 [Tarball](https://github.com/Red5/red5-server/releases/download/v1.0.4-RELEASE/red5-server-1.0.4-RELEASE-server.tar.gz) | [ZIP](https://github.com/Red5/red5-server/releases/download/v1.0.4-RELEASE/red5-server-1.0.4-RELEASE-server.zip) | [Windows](https://mega.co.nz/#!pAMnyLRK!IjEUi9Kwn7sdRHkkgQhJf0GDvjJYLhxfXo8uwPclrQo)
 
@@ -138,6 +141,17 @@ Previous Releases
 <a href="http://red5.org/downloads/red5/0_8/red5-0.8.0-java5.tar.gz">Tarball</a> (Java5) | 
 <a href="http://red5.org/downloads/red5/0_8/red5-war-0.8.0.zip">WAR</a> | 
 <a href="http://red5.org/downloads/red5/0_8/red5-war-0.8.0-java5.zip">WAR</a> (Java5)
+
+Supporters
+-------------
+[Powerflasher for FDT](http://fdt.powerflasher.com/)
+
+[YourKit](http://www.yourkit.com/) YourKit is kindly supporting open source projects with its full-featured Java Profiler. YourKit, LLC is the creator of innovative and intelligent tools for profiling Java and .NET applications. Take a look at YourKit's leading software products:
+
+[YourKit Java Profiler](http://www.yourkit.com/java/profiler/index.jsp)   
+
+[YourKit .NET Profiler](http://www.yourkit.com/dotnet/index.jsp)
+
 
 Donations
 -------------
