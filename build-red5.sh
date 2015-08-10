@@ -6,6 +6,7 @@ set -e
 RED5_SRC=$(pwd)
 RED5_VER=1.0.6-SNAPSHOT
 RED5_DIR=red5-server-${RED5_VER}
+RED5_WEBAPPS=${RED5_DIR}/webapps
 
 echo "Preparing build"
 mvn clean
@@ -20,6 +21,11 @@ mvn -Dmaven.test.skip=true clean package -P assemble
 cd $RED5_SRC/target
 echo "Extractring red5"
 tar zxvf red5-server-${RED5_VER}-server.tar.gz
+
+rm -rf ${RED5_WEBAPPS}/chat
+rm -rf ${RED5_WEBAPPS}/vod
+rm -rf ${RED5_WEBAPPS}/installer
+rm -rf ${RED5_WEBAPPS}/live
 
 cp $RED5_SRC/extras/commons-fileupload-1.2.2.jar $RED5_DIR/lib
 cp $RED5_SRC/extras/commons-io-2.0.jar $RED5_DIR/lib

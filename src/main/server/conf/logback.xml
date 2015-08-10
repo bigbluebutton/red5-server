@@ -47,7 +47,7 @@
   </root>
 	
   <logger name="org.red5.server.net.rtmp.codec.RTMPProtocolEncoder">
-    <level value="DEBUG" />
+    <level value="INFO" />
   </logger>
   
   <logger name="org.red5.server.net.rtmp.RTMPConnection">
