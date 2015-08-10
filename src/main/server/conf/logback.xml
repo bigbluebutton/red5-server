@@ -46,6 +46,10 @@
     <appender-ref ref="ERRORFILE" />
   </root>
 	
+  <logger name="org.red5.server.net.rtmp.codec.RTMPProtocolEncoder">
+    <level value="DEBUG" />
+  </logger>
+  
   <logger name="org.red5.server.net.rtmp.RTMPConnection">
     <level value="INFO" />
   </logger>
