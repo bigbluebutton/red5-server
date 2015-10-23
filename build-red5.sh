@@ -4,8 +4,8 @@ set -x
 set -e
 
 RED5_SRC=$(pwd)
-RED5_VER=1.0.6-SNAPSHOT
-RED5_DIR=red5-server-${RED5_VER}
+RED5_VER=1.0.7-SNAPSHOT
+RED5_DIR=red5-server
 RED5_WEBAPPS=${RED5_DIR}/webapps
 
 echo "Preparing build"
@@ -20,7 +20,7 @@ mvn -Dmaven.test.skip=true clean package -P assemble
 
 cd $RED5_SRC/target
 echo "Extractring red5"
-tar zxvf red5-server-${RED5_VER}-server.tar.gz
+tar zxvf red5-server-${RED5_VER}.tar.gz
 
 rm -rf ${RED5_WEBAPPS}/chat
 rm -rf ${RED5_WEBAPPS}/vod
