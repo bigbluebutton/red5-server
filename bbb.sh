@@ -12,10 +12,10 @@ RED5_DIR=/usr/share/red5
 
 cd $RED5_SRC
 
-DESKSHARE=/home/$WHOAMI/dev/old-bbb/bigbluebutton/deskshare
-VOICE=/home/$WHOAMI/dev/old-bbb/bigbluebutton/bbb-voice
-VIDEO=/home/$WHOAMI/dev/old-bbb/bigbluebutton/bbb-video
-APPS=/home/$WHOAMI/dev/old-bbb/bigbluebutton/bigbluebutton-apps
+DESKSHARE=/home/$WHOAMI/dev/bigbluebutton/deskshare
+VOICE=/home/$WHOAMI/dev/bigbluebutton/bbb-voice
+VIDEO=/home/$WHOAMI/dev/bigbluebutton/bbb-video
+APPS=/home/$WHOAMI/dev/bigbluebutton/bigbluebutton-apps
 
 echo "Building apps"
 cd $APPS
