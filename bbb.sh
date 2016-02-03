@@ -12,6 +12,8 @@ RED5_DIR=/usr/share/red5
 
 cd $RED5_SRC
 
+sudo chmod -R 777 $RED5_DIR/webapps/
+
 DESKSHARE=/home/$WHOAMI/dev/bigbluebutton/deskshare
 VOICE=/home/$WHOAMI/dev/bigbluebutton/bbb-voice
 VIDEO=/home/$WHOAMI/dev/bigbluebutton/bbb-video
