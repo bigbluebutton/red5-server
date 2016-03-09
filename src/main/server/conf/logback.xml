@@ -1,5 +1,6 @@
 <?xml version="1.0" ?>
-<configuration>
+<configuration scan="true">
+  <jmxConfigurator/>
   <!-- Uncomment if you are using the logback plugin for eclipse
   <consolePlugin/>
   -->
