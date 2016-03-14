@@ -1,5 +1,5 @@
 <?xml version="1.0" ?>
-<configuration>
+<configuration scan="true">
   <!-- Uncomment if you are using the logback plugin for eclipse
   <consolePlugin/>
   -->
@@ -71,4 +71,5 @@
   <logger name="ch.qos">
     <level value="WARN" />
   </logger>
+  <logger name="org.apache.jasper.servlet" level="WARN" />
 </configuration>
