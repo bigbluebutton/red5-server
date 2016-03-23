@@ -4,7 +4,7 @@ set -x
 set -e
 
 RED5_SRC=$(pwd)
-RED5_VER=1.0.7-M8
+RED5_VER=1.0.7-M9
 RED5_DIR=red5-server
 RED5_WEBAPPS=${RED5_DIR}/webapps
 
