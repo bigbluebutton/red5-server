@@ -16,6 +16,9 @@
         <appender-ref ref="CONSOLE" />
         <appender-ref ref="FILE" />
     </root>
+    <logger name="org.red5.server.net.rtmp.RTMPHandshake" level="TRACE" />
+    <logger name="org.red5.server.net.rtmp.InboundHandshake" level="TRACE" />
+    <logger name="org.red5.server.net.rtmpe.RTMPEIoFilter" level="TRACE" />
     <logger name="org.springframework" level="INFO" />
     <logger name="org.springframework.scheduling" level="WARN" />
     <logger name="org.apache" level="INFO" />
