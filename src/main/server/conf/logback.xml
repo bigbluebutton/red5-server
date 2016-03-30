@@ -46,30 +46,11 @@
     <appender-ref ref="ERRORFILE" />
   </root>
 	
-  <logger name="org.red5.server.net.rtmp.codec.RTMPProtocolEncoder">
-    <level value="INFO" />
-  </logger>
-  
-  <logger name="org.red5.server.net.rtmp.RTMPConnection">
-    <level value="INFO" />
-  </logger>
-
-  <logger name="org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler">
-    <level value="WARN" />
-  </logger>
-  
-  <logger name="org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor">
-    <level value="WARN" />
-  </logger>
-  
-  <logger name="org.springframework">
-    <level value="INFO" />
-  </logger>
-  <logger name="org.apache">
-    <level value="INFO" />
-  </logger>
-  <logger name="ch.qos">
-    <level value="WARN" />
-  </logger>
+  <logger name="org.red5.server.net.rtmp.codec.RTMPProtocolEncoder"><level value="INFO" /></logger>
+  <logger name="org.red5.server.net.rtmp.RTMPConnection"><level value="INFO"/></logger>
+  <logger name="org.springframework.scheduling" level="WARN" />
+  <logger name="org.springframework"><level value="INFO" /></logger>
+  <logger name="org.apache"><level value="INFO" /></logger>
+  <logger name="ch.qos"><level value="WARN" /></logger>
   <logger name="org.apache.jasper.servlet" level="WARN" />
 </configuration>
