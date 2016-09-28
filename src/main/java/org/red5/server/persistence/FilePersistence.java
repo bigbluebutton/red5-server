@@ -349,7 +349,7 @@ public class FilePersistence extends RamPersistence {
 				return null;
 			}
 		}
-		FileInputStream input;
+		FileInputStream input = null;
 		String filename;
 		try {
 			File fp = data.getFile();
@@ -366,6 +366,15 @@ public class FilePersistence extends RamPersistence {
 		} catch (IOException e) {
 			log.error("Could not load file from {}", data.getFilename(), e);
 			return null;
+		} finally {
+			if (input != null) {
+				try {
+					input.close();
+				} catch (IOException ex) {
+					log.error("Closing file");
+				}
+
+			}
 		}
 
 		try {

@@ -20,6 +20,7 @@ package org.red5.server.net.proxy;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.WritableByteChannel;
 
@@ -122,18 +123,27 @@ public class DebugProxyHandler extends IoHandlerAdapter implements ResourceLoade
 			File rawFile = loader.getResource(dumpTo + fileName + ".raw").getFile();
 			rawFile.createNewFile();
 
-			FileOutputStream headersFos = new FileOutputStream(headersFile);
-			WritableByteChannel headers = headersFos.getChannel();
-
-			FileOutputStream rawFos = new FileOutputStream(rawFile);
-			WritableByteChannel raw = rawFos.getChannel();
-
-			IoBuffer header = IoBuffer.allocate(1);
-			header.put((byte) (isClient ? 0x00 : 0x01));
-			header.flip();
-			headers.write(header.buf());
-
-			session.getFilterChain().addFirst("dump", new NetworkDumpFilter(headers, raw));
+			FileOutputStream headersFos = null;
+			WritableByteChannel headers = null;
+			FileOutputStream rawFos = null;
+			try {
+				headersFos = new FileOutputStream(headersFile);
+				headers = headersFos.getChannel();
+				rawFos = new FileOutputStream(rawFile);
+				WritableByteChannel raw = rawFos.getChannel();
+				IoBuffer header = IoBuffer.allocate(1);
+				header.put((byte) (isClient ? 0x00 : 0x01));
+				header.flip();
+				headers.write(header.buf());
+				session.getFilterChain().addFirst("dump", new NetworkDumpFilter(headers, raw));
+			} finally {
+				if (headersFos != null) {
+					headersFos.close();
+				}
+				if (rawFos != null) {
+					rawFos.close();
+				}
+			}
 		}
 
 		//session.getFilterChain().addLast("logger", new LoggingFilter() );
