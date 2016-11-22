@@ -4,7 +4,7 @@ set -x
 set -e
 
 RED5_SRC=$(pwd)
-RED5_VER=1.0.7-M10
+RED5_VER=1.0.8-M13
 RED5_DIR=red5-server
 RED5_WEBAPPS=${RED5_DIR}/webapps
 
@@ -26,7 +26,7 @@ rm -rf ${RED5_WEBAPPS}/chat
 rm -rf ${RED5_WEBAPPS}/vod
 rm -rf ${RED5_WEBAPPS}/installer
 rm -rf ${RED5_WEBAPPS}/live
-rm -rf ${RED5_WEBAPPS}/root
+#rm -rf ${RED5_WEBAPPS}/root
 
 cp $RED5_SRC/extras/commons-fileupload-1.2.2.jar $RED5_DIR/lib
 cp $RED5_SRC/extras/commons-io-2.0.jar $RED5_DIR/lib

@@ -5,14 +5,14 @@
 set -x
 
 RED5_SRC=$(pwd)
-RED5_VER=1.0.7-M8
+RED5_VER=1.0.8-M13
 WHOAMI=$(whoami)
 
 RED5_DIR=/usr/share/red5
 
 cd $RED5_SRC
 
-DESKSHARE=/home/$WHOAMI/dev/bigbluebutton/deskshare
+DESKSHARE=/home/$WHOAMI/dev/bigbluebutton/bbb-screenshare
 VOICE=/home/$WHOAMI/dev/bigbluebutton/bbb-voice
 VIDEO=/home/$WHOAMI/dev/bigbluebutton/bbb-video
 APPS=/home/$WHOAMI/dev/bigbluebutton/bigbluebutton-apps
@@ -33,10 +33,8 @@ gradle resolveDeps
 gradle clean war deploy
 
 echo "Building deskshare"
-cd $DESKSHARE
-gradle resolveDeps
 cd $DESKSHARE/app
-gradle clean war deploy
+./deploy.sh
 
 cd $RED5_SRC
 
