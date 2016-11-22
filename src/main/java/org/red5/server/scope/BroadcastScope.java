@@ -1,5 +1,5 @@
 /*
- * RED5 Open Source Flash Server - https://github.com/Red5/
+ * RED5 Open Source Media Server - https://github.com/Red5/
  * 
  * Copyright 2006-2016 by respective authors (see below). All rights reserved.
  * 
@@ -126,17 +126,7 @@ public class BroadcastScope extends BasicScope implements IBroadcastScope, IPipe
      *            Consumer
      * @param paramMap
      *            Parameters passed with connection
-     * @return <pre>
-     * true
-     * </pre>
-     * 
-     *         on success,
-     * 
-     *         <pre>
-     * false
-     * </pre>
-     * 
-     *         otherwise
+     * @return true on success, false otherwise
      */
     public boolean subscribe(IConsumer consumer, Map<String, Object> paramMap) {
         return !removed && pipe.subscribe(consumer, paramMap);
@@ -147,17 +137,7 @@ public class BroadcastScope extends BasicScope implements IBroadcastScope, IPipe
      * 
      * @param consumer
      *            Consumer
-     * @return <pre>
-     * true
-     * </pre>
-     * 
-     *         on success,
-     * 
-     *         <pre>
-     * false
-     * </pre>
-     * 
-     *         otherwise
+     * @return true on success, false otherwise
      */
     public boolean unsubscribe(IConsumer consumer) {
         return pipe.unsubscribe(consumer);
@@ -203,17 +183,7 @@ public class BroadcastScope extends BasicScope implements IBroadcastScope, IPipe
      *            Provider
      * @param paramMap
      *            Parameters passed on connection
-     * @return <pre>
-     * true
-     * </pre>
-     * 
-     *         on success,
-     * 
-     *         <pre>
-     * false
-     * </pre>
-     * 
-     *         otherwise
+     * @return true on success, false otherwise
      */
     public boolean subscribe(IProvider provider, Map<String, Object> paramMap) {
         return !removed && pipe.subscribe(provider, paramMap);
@@ -224,17 +194,7 @@ public class BroadcastScope extends BasicScope implements IBroadcastScope, IPipe
      * 
      * @param provider
      *            Provider
-     * @return <pre>
-     * true
-     * </pre>
-     * 
-     *         on success,
-     * 
-     *         <pre>
-     * false
-     * </pre>
-     * 
-     *         otherwise
+     * @return true on success, false otherwise
      */
     public boolean unsubscribe(IProvider provider) {
         return pipe.unsubscribe(provider);
@@ -270,14 +230,14 @@ public class BroadcastScope extends BasicScope implements IBroadcastScope, IPipe
     public void onPipeConnectionEvent(PipeConnectionEvent event) {
         // Switch event type
         switch (event.getType()) {
-            case PipeConnectionEvent.CONSUMER_CONNECT_PULL:
-            case PipeConnectionEvent.CONSUMER_CONNECT_PUSH:
-            case PipeConnectionEvent.PROVIDER_CONNECT_PULL:
-            case PipeConnectionEvent.PROVIDER_CONNECT_PUSH:
+            case CONSUMER_CONNECT_PULL:
+            case CONSUMER_CONNECT_PUSH:
+            case PROVIDER_CONNECT_PULL:
+            case PROVIDER_CONNECT_PUSH:
                 compCounter.incrementAndGet();
                 break;
-            case PipeConnectionEvent.CONSUMER_DISCONNECT:
-            case PipeConnectionEvent.PROVIDER_DISCONNECT:
+            case CONSUMER_DISCONNECT:
+            case PROVIDER_DISCONNECT:
                 if (compCounter.decrementAndGet() <= 0) {
                     // XXX should we synchronize parent before removing?
                     if (hasParent()) {

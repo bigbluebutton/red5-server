@@ -1,5 +1,5 @@
 /*
- * RED5 Open Source Flash Server - https://github.com/Red5/
+ * RED5 Open Source Media Server - https://github.com/Red5/
  * 
  * Copyright 2006-2016 by respective authors (see below). All rights reserved.
  * 
@@ -94,11 +94,7 @@ public class DebugProxyHandler extends IoHandlerAdapter implements ResourceLoade
     public void sessionOpened(IoSession session) throws Exception {
         SocketSessionConfig ssc = (SocketSessionConfig) session.getConfig();
         ssc.setTcpNoDelay(true);
-        //ssc.setReceiveBufferSize(2048);
-        //ssc.setSendBufferSize(2048);
-
         super.sessionOpened(session);
-
     }
 
     /** {@inheritDoc} */

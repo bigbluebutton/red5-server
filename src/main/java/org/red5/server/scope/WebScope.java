@@ -1,5 +1,5 @@
 /*
- * RED5 Open Source Flash Server - https://github.com/Red5/
+ * RED5 Open Source Media Server - https://github.com/Red5/
  * 
  * Copyright 2006-2016 by respective authors (see below). All rights reserved.
  * 
@@ -214,25 +214,24 @@ public class WebScope extends Scope implements ServletContextAware, WebScopeMXBe
      * Map all vhosts to global scope then initialize
      */
     public void register() {
-        if (registered.get()) {
-            log.info("Webscope already registered");
-            return;
-        }
-        log.debug("Webscope registering: {}", contextPath);
-        getAppContext();
-        appLoader = LoaderBase.getApplicationLoader();
-        //get the parent name
-        String parentName = getParent().getName();
-        //add host name mappings
-        if (hostnames != null && hostnames.length > 0) {
-            for (String hostName : hostnames) {
-                server.addMapping(hostName, getName(), parentName);
+        if (registered.compareAndSet(false, true)) {
+            log.debug("Webscope registering: {}", contextPath);
+            getAppContext();
+            appLoader = LoaderBase.getApplicationLoader();
+            //get the parent name
+            String parentName = getParent().getName();
+            //add host name mappings
+            if (hostnames != null && hostnames.length > 0) {
+                for (String hostName : hostnames) {
+                    server.addMapping(hostName, getName(), parentName);
+                }
             }
+            init();
+            // don't free configured scopes when a client disconnects
+            keepOnDisconnect = true;
+        } else {
+            log.info("Webscope already registered; remove the 'init-method' from your 'web.scope' bean to prevent this message in the future.");
         }
-        init();
-        // don't free configured scopes when a client disconnects
-        keepOnDisconnect = true;
-        registered.set(true);
     }
 
     /**

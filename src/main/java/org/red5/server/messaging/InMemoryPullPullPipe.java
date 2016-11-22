@@ -1,5 +1,5 @@
 /*
- * RED5 Open Source Flash Server - https://github.com/Red5/
+ * RED5 Open Source Media Server - https://github.com/Red5/
  * 
  * Copyright 2006-2016 by respective authors (see below). All rights reserved.
  * 
@@ -38,7 +38,7 @@ public class InMemoryPullPullPipe extends AbstractPipe {
     public boolean subscribe(IConsumer consumer, Map<String, Object> paramMap) {
         boolean success = super.subscribe(consumer, paramMap);
         if (success) {
-            fireConsumerConnectionEvent(consumer, PipeConnectionEvent.CONSUMER_CONNECT_PULL, paramMap);
+            fireConsumerConnectionEvent(consumer, PipeConnectionEvent.EventType.CONSUMER_CONNECT_PULL, paramMap);
         }
         return success;
     }
@@ -49,7 +49,7 @@ public class InMemoryPullPullPipe extends AbstractPipe {
         if (provider instanceof IPullableProvider) {
             boolean success = super.subscribe(provider, paramMap);
             if (success) {
-                fireProviderConnectionEvent(provider, PipeConnectionEvent.PROVIDER_CONNECT_PULL, paramMap);
+                fireProviderConnectionEvent(provider, PipeConnectionEvent.EventType.PROVIDER_CONNECT_PULL, paramMap);
             }
             return success;
         } else {

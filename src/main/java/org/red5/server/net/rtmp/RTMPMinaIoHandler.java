@@ -1,5 +1,5 @@
 /*
- * RED5 Open Source Flash Server - https://github.com/Red5/
+ * RED5 Open Source Media Server - https://github.com/Red5/
  * 
  * Copyright 2006-2016 by respective authors (see below). All rights reserved.
  * 
@@ -52,7 +52,7 @@ public class RTMPMinaIoHandler extends IoHandlerAdapter {
     /** {@inheritDoc} */
     @Override
     public void sessionCreated(IoSession session) throws Exception {
-        log.debug("Session created");
+        log.debug("Session created RTMP");
         // add rtmpe filter, rtmp protocol filter is added upon successful handshake
         session.getFilterChain().addFirst("rtmpeFilter", new RTMPEIoFilter());
         // create a connection
@@ -63,8 +63,12 @@ public class RTMPMinaIoHandler extends IoHandlerAdapter {
         conn.setHandler(handler);
         // add the connections session id for look up using the connection manager
         session.setAttribute(RTMPConnection.RTMP_SESSION_ID, conn.getSessionId());
+        // create an inbound handshake
+        InboundHandshake handshake = new InboundHandshake();
+        // set whether or not unverified will be allowed
+        handshake.setUnvalidatedConnectionAllowed(((RTMPHandler) handler).isUnvalidatedConnectionAllowed()); 
         // add the in-bound handshake, defaults to non-encrypted mode
-        session.setAttribute(RTMPConnection.RTMP_HANDSHAKE, new InboundHandshake());
+        session.setAttribute(RTMPConnection.RTMP_HANDSHAKE, handshake);
     }
 
     /** {@inheritDoc} */
@@ -112,10 +116,14 @@ public class RTMPMinaIoHandler extends IoHandlerAdapter {
     /** {@inheritDoc} */
     @Override
     public void messageReceived(IoSession session, Object message) throws Exception {
-        log.trace("messageReceived session: {} message: {}", session, message);
-        log.trace("Filter chain: {}", session.getFilterChain());
+        if (log.isTraceEnabled()) {
+            log.trace("messageReceived session: {} message: {}", session, message);
+            log.trace("Filter chain: {}", session.getFilterChain());
+        }
         String sessionId = (String) session.getAttribute(RTMPConnection.RTMP_SESSION_ID);
-        log.trace("Message received on session: {} id: {}", session.getId(), sessionId);
+        if (log.isTraceEnabled()) {
+            log.trace("Message received on session: {} id: {}", session.getId(), sessionId);
+        }
         RTMPMinaConnection conn = (RTMPMinaConnection) RTMPConnManager.getInstance().getConnectionBySessionId(sessionId);
         if (conn != null) {
             if (message != null) {
@@ -211,6 +219,7 @@ public class RTMPMinaIoHandler extends IoHandlerAdapter {
      * @param session
      * @param immediately close without waiting for the write queue to flush
      */
+    @SuppressWarnings("deprecation")
     private void cleanSession(final IoSession session, boolean immediately) {
         // clean up
         final String sessionId = (String) session.getAttribute(RTMPConnection.RTMP_SESSION_ID);
@@ -230,7 +239,7 @@ public class RTMPMinaIoHandler extends IoHandlerAdapter {
             }
         }
         // force close the session
-        final CloseFuture future = immediately ? session.closeNow() : session.closeOnFlush();
+        final CloseFuture future = immediately ? session.close(false) : session.close(true);
         IoFutureListener<CloseFuture> listener = new IoFutureListener<CloseFuture>() {
             @SuppressWarnings({ "unchecked", "rawtypes" })
             public void operationComplete(CloseFuture future) {
