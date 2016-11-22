@@ -1,5 +1,5 @@
 /*
- * RED5 Open Source Flash Server - https://github.com/Red5/
+ * RED5 Open Source Media Server - https://github.com/Red5/
  * 
  * Copyright 2006-2016 by respective authors (see below). All rights reserved.
  * 
@@ -33,8 +33,10 @@ import org.apache.mina.core.session.IoSession;
 import org.apache.mina.filter.ssl.KeyStoreFactory;
 import org.apache.mina.filter.ssl.SslContextFactory;
 import org.apache.mina.filter.ssl.SslFilter;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.red5.server.net.rtmp.InboundHandshake;
 import org.red5.server.net.rtmp.RTMPConnection;
+import org.red5.server.net.rtmp.RTMPHandler;
 import org.red5.server.net.rtmp.RTMPMinaConnection;
 import org.red5.server.net.rtmp.RTMPMinaIoHandler;
 import org.slf4j.Logger;
@@ -110,6 +112,8 @@ public class RTMPSMinaIoHandler extends RTMPMinaIoHandler {
     private boolean wantClientAuth;
 
     static {
+        // add bouncycastle security provider
+        Security.addProvider(new BouncyCastleProvider());
         if (log.isTraceEnabled()) {
             Provider[] providers = Security.getProviders();
             for (Provider provider : providers) {
@@ -121,7 +125,7 @@ public class RTMPSMinaIoHandler extends RTMPMinaIoHandler {
     /** {@inheritDoc} */
     @Override
     public void sessionCreated(IoSession session) throws Exception {
-        log.debug("Session created");
+        log.debug("Session created: RTMPS");
         if (keystoreFile == null || truststoreFile == null) {
             throw new NotActiveException("Keystore or truststore are null");
         }
@@ -191,6 +195,7 @@ public class RTMPSMinaIoHandler extends RTMPMinaIoHandler {
         IoFilterChain chain = session.getFilterChain();
         // add ssl first
         chain.addFirst("sslFilter", sslFilter);
+        // use notification messages
         session.setAttribute(SslFilter.USE_NOTIFICATION, Boolean.TRUE);
         log.debug("isSslStarted: {}", sslFilter.isSslStarted(session));
         //if (log.isTraceEnabled()) {
@@ -206,8 +211,12 @@ public class RTMPSMinaIoHandler extends RTMPMinaIoHandler {
         conn.setHandler(handler);
         // add the connections session id for look up using the connection manager
         session.setAttribute(RTMPConnection.RTMP_SESSION_ID, conn.getSessionId());
-        // set the handshake on the session
-        session.setAttribute(RTMPConnection.RTMP_HANDSHAKE, new InboundHandshake());
+        // create an inbound handshake
+        InboundHandshake handshake = new InboundHandshake();
+        // set whether or not unverified will be allowed
+        handshake.setUnvalidatedConnectionAllowed(((RTMPHandler) handler).isUnvalidatedConnectionAllowed()); 
+        // add the in-bound handshake, defaults to non-encrypted mode
+        session.setAttribute(RTMPConnection.RTMP_HANDSHAKE, handshake);
     }
 
     /**

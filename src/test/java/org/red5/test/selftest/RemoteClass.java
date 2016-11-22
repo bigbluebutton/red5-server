@@ -1,7 +1,7 @@
 /*
- * RED5 Open Source Flash Server - https://github.com/Red5/
+ * RED5 Open Source Flash Server - http://code.google.com/p/red5/
  * 
- * Copyright 2006-2016 by respective authors (see below). All rights reserved.
+ * Copyright 2006-2013 by respective authors (see below). All rights reserved.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,11 @@
  * limitations under the License.
  */
 
-package org.slf4j.impl;
+package org.red5.test.selftest;
 
-import ch.qos.logback.classic.selector.ContextSelector;
+public class RemoteClass {
 
-/**
- * Interface to provide a ContextSelector.
- * 
- * @author Paul Gregoire (mondain@gmail.com)
- */
-public interface LoggerContextSelectorProvider {
-
-    public ContextSelector getContextSelector();
-
+	public String attribute1;
+	
+	public int attribute2;
 }

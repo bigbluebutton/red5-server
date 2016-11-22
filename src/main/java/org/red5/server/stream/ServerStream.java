@@ -1,5 +1,5 @@
 /*
- * RED5 Open Source Flash Server - https://github.com/Red5/
+ * RED5 Open Source Media Server - https://github.com/Red5/
  * 
  * Copyright 2006-2016 by respective authors (see below). All rights reserved.
  * 
@@ -544,12 +544,12 @@ public class ServerStream extends AbstractStream implements IServerStream, IFilt
      */
     public void onPipeConnectionEvent(PipeConnectionEvent event) {
         switch (event.getType()) {
-            case PipeConnectionEvent.PROVIDER_CONNECT_PUSH:
+            case PROVIDER_CONNECT_PUSH:
                 if (event.getProvider() == this && (event.getParamMap() == null || !event.getParamMap().containsKey("record"))) {
                     this.msgOut = (IMessageOutput) event.getSource();
                 }
                 break;
-            case PipeConnectionEvent.PROVIDER_DISCONNECT:
+            case PROVIDER_DISCONNECT:
                 if (this.msgOut == event.getSource()) {
                     this.msgOut = null;
                 }
