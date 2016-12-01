@@ -125,6 +125,8 @@
         <property name="pendingCallsConcurrencyLevel" value="${rtmp.pending.calls.concurrency.level}" />
         <property name="reservedStreamsInitalCapacity" value="${rtmp.reserved.streams.initial.capacity}" />
         <property name="reservedStreamsConcurrencyLevel" value="${rtmp.reserved.streams.concurrency.level}" />
+        <property name="maxPendingVideoFrames" value="${rtmp.maxPendingVideoFrames}" />
+        <property name="maxSequentialPendingVideoFrames" value="${rtmp.maxSequentialPendingVideoFrames}" />
     </bean>
     
     <!-- RTMPT -->

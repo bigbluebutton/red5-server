@@ -45,7 +45,8 @@
     <appender-ref ref="FILE" />
     <appender-ref ref="ERRORFILE" />
   </root>
-	
+
+  <logger name="org.red5.server.stream.PlayEngine"><level value="INFO" /></logger>
   <logger name="org.red5.server.net.rtmp.codec.RTMPProtocolEncoder"><level value="INFO" /></logger>
   <logger name="org.red5.server.net.rtmp.RTMPConnection"><level value="INFO"/></logger>
   <logger name="org.springframework.scheduling" level="WARN" />
