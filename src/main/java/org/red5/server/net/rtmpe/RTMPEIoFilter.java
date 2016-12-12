@@ -1,5 +1,5 @@
 /*
- * RED5 Open Source Flash Server - https://github.com/Red5/
+ * RED5 Open Source Media Server - https://github.com/Red5/
  * 
  * Copyright 2006-2016 by respective authors (see below). All rights reserved.
  * 
@@ -48,10 +48,14 @@ public class RTMPEIoFilter extends IoFilterAdapter {
 
     @Override
     public void messageReceived(NextFilter nextFilter, IoSession session, Object obj) throws Exception {
-        log.trace("messageReceived nextFilter: {} session: {} message: {}", nextFilter, session, obj);
+        if (log.isTraceEnabled()) {
+            log.trace("messageReceived nextFilter: {} session: {} message: {}", nextFilter, session, obj);
+        }
         String sessionId = (String) session.getAttribute(RTMPConnection.RTMP_SESSION_ID);
         if (sessionId != null) {
-            log.trace("Session id: {}", sessionId);
+            if (log.isTraceEnabled()) {
+                log.trace("RTMP Session id: {}", sessionId);
+            }
             RTMPMinaConnection conn = (RTMPMinaConnection) RTMPConnManager.getInstance().getConnectionBySessionId(sessionId);
             if (conn == null) {
                 throw new Exception("Receive on unavailable connection - session id: " + sessionId);
@@ -144,7 +148,6 @@ public class RTMPEIoFilter extends IoFilterAdapter {
                         } else {
                             log.warn("Client was rejected due to invalid handshake");
                             conn.close();
-                            break;
                         }
                     }
                     break;
@@ -187,9 +190,13 @@ public class RTMPEIoFilter extends IoFilterAdapter {
     @Override
     public void filterWrite(NextFilter nextFilter, IoSession session, WriteRequest request) throws Exception {
         log.trace("filterWrite nextFilter: {} session: {} request: {}", nextFilter, session, request);
-        RTMPMinaConnection conn = (RTMPMinaConnection) RTMPConnManager.getInstance().getConnectionBySessionId((String) session.getAttribute(RTMPConnection.RTMP_SESSION_ID));
-        if (conn.getState().isEncrypted()) {
-            Cipher cipher = (Cipher) session.getAttribute(RTMPConnection.RTMPE_CIPHER_OUT);
+        Cipher cipher = (Cipher) session.getAttribute(RTMPConnection.RTMPE_CIPHER_OUT);
+        if (cipher == null) {
+            if (log.isTraceEnabled()) {
+                log.trace("Writing message");
+            }
+            nextFilter.filterWrite(session, request);
+        } else {
             IoBuffer message = (IoBuffer) request.getMessage();
             if (!message.hasRemaining()) {
                 if (log.isTraceEnabled()) {
@@ -211,9 +218,6 @@ public class RTMPEIoFilter extends IoFilterAdapter {
                 }
                 nextFilter.filterWrite(session, new EncryptedWriteRequest(request, messageEncrypted));
             }
-        } else {
-            log.trace("Writing message");
-            nextFilter.filterWrite(session, request);
         }
     }
 

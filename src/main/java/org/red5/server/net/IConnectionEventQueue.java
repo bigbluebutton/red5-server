@@ -1,5 +1,5 @@
 /*
- * RED5 Open Source Flash Server - https://github.com/Red5/
+ * RED5 Open Source Media Server - https://github.com/Red5/
  * 
  * Copyright 2006-2016 by respective authors (see below). All rights reserved.
  * 
@@ -27,22 +27,13 @@ import org.red5.server.api.event.IEvent;
  * Queue of connection events
  */
 public interface IConnectionEventQueue {
+
     /**
      * Whether queue has waiting connection events
      * 
      * @param conn
      *            Connection
-     * @return <pre>
-     * true
-     * </pre>
-     * 
-     *         if queue has waiting events for connection,
-     * 
-     *         <pre>
-     * false
-     * </pre>
-     * 
-     *         otherwise
+     * @return true if queue has waiting events for connection, false otherwise
      */
     public boolean hasEventsWaiting(IConnection conn);
 

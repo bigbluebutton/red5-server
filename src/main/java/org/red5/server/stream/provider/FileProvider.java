@@ -1,5 +1,5 @@
 /*
- * RED5 Open Source Flash Server - https://github.com/Red5/
+ * RED5 Open Source Media Server - https://github.com/Red5/
  * 
  * Copyright (c) 2006-2011 by respective authors (see below). All rights reserved.
  * 
@@ -181,18 +181,18 @@ public class FileProvider implements IPassive, ISeekableProvider, IPullableProvi
     /** {@inheritDoc} */
     public void onPipeConnectionEvent(PipeConnectionEvent event) {
         switch (event.getType()) {
-            case PipeConnectionEvent.PROVIDER_CONNECT_PULL:
+            case PROVIDER_CONNECT_PULL:
                 if (pipe == null) {
                     pipe = (IPipe) event.getSource();
                 }
                 break;
-            case PipeConnectionEvent.PROVIDER_DISCONNECT:
+            case PROVIDER_DISCONNECT:
                 if (pipe == event.getSource()) {
-                    this.pipe = null;
+                    pipe = null;
                     uninit();
                 }
                 break;
-            case PipeConnectionEvent.CONSUMER_DISCONNECT:
+            case CONSUMER_DISCONNECT:
                 if (pipe == event.getSource()) {
                     uninit();
                 }
