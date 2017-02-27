@@ -43,7 +43,7 @@
         <property name="services">
             <list>
                 <bean id="flvFileService" class="org.red5.server.service.flv.impl.FLVService">
-                    <property name="generateMetadata" value="true"/>
+                    <property name="generateMetadata" value="${rtmp.generateMetadata}"/>
                 </bean>
                 <bean id="mp3FileService" class="org.red5.server.service.mp3.impl.MP3Service"/>
                 <bean id="mp4FileService" class="org.red5.server.service.mp4.impl.MP4Service"/>
