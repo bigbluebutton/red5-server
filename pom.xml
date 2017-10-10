@@ -3,7 +3,7 @@
     <parent>
         <groupId>org.red5</groupId>
         <artifactId>red5-parent</artifactId>
-        <version>1.0.8-M13</version>
+        <version>1.0.10-M4</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>red5-server</artifactId>
@@ -62,9 +62,7 @@
         <red5-io.version>${project.parent.version}</red5-io.version>
         <red5-service.version>${project.parent.version}</red5-service.version>
         <red5-server-common.version>${project.parent.version}</red5-server-common.version>
-        <tomcatplugin.version>1.17</tomcatplugin.version>
-        <websocket.version>1.6</websocket.version>
-        <cors-filter.version>2.5</cors-filter.version>
+        <cors-filter.version>2.6</cors-filter.version>
     </properties>
     <repositories>
         <repository>
@@ -279,15 +277,17 @@
                     <groupId>c3p0</groupId>
                     <artifactId>c3p0</artifactId>
                 </exclusion>
+                <exclusion>
+                    <artifactId>c3p0</artifactId>
+                    <groupId>com.mchange</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>HikariCP-java6</artifactId>
+                    <groupId>com.zaxxer</groupId>
+                </exclusion>
             </exclusions>
         </dependency>
         <!-- Runtime plugin deps -->
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>websocket</artifactId>
-            <version>${websocket.version}</version>
-            <scope>provided</scope>
-        </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>tomcatplugin</artifactId>
@@ -352,6 +352,25 @@
                                     <outputDirectory>${project.build.directory}/plugins</outputDirectory>
                                     <includeScope>provided</includeScope>
                                     <excludeTransitive>false</excludeTransitive>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>copy-dependency-websocket-plugin</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>copy</goal>
+                                </goals>
+                                <configuration>
+                                    <artifactItems>
+                                        <artifactItem>
+                                          <groupId>org.red5</groupId>
+                                          <artifactId>websocket</artifactId>
+                                          <version>${websocket.version}</version>
+                                          <type>jar</type>
+                                          <overWrite>true</overWrite>
+                                          <outputDirectory>${project.build.directory}/plugins</outputDirectory>
+                                        </artifactItem>
+                                    </artifactItems>
                                 </configuration>
                             </execution>
                             <execution>

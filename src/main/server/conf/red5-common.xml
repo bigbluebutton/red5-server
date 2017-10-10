@@ -67,16 +67,16 @@
             </bean>
         </property>
     </bean>
-    
+
     <!-- High level access to streams -->
     <bean id="streamService" class="org.red5.server.stream.StreamService"/>
-    
+
     <!-- High level access to broadcasted streams -->
     <bean id="providerService" class="org.red5.server.stream.ProviderService"/>
-    
+
     <!-- Provides output to consumers -->
     <bean id="consumerService" class="org.red5.server.stream.ConsumerService"/>
- 
+
     <!-- Scheduling service -->
     <bean id="schedulingService" class="org.red5.server.scheduling.QuartzSchedulingService">
         <property name="configFile" value="${red5.root}/conf/quartz.properties"/>   
@@ -86,7 +86,7 @@
     <bean id="remotingClient" class="org.red5.server.net.remoting.RemotingClient">
         <property name="poolSize" value="1"/>
     </bean>
-    
+
     <!--
     Now we can load the cache engine, only one may be enabled at a time. If no-caching is required select the
     NoCacheImpl. Three other implementations based on EhCache, and Red5Cache are also available.
@@ -120,7 +120,7 @@
     <bean id="keyframe.cache" class="org.red5.io.CachingFileKeyFrameMetaCache">
         <property name="maxCacheEntry" value="${keyframe.cache.entry.max}" />
     </bean>
-    
+
     <!--
         Represents FLV files
         Use injection to set the cache impl to be used with flvs
@@ -130,7 +130,9 @@
             <ref bean="object.cache"/>
         </property>
         <!-- Writer post-process example -->
+        <!-- 
         <property name="writerPostProcessor" value="org.red5.media.processor.GenericWriterPostProcessor" />
+        -->
     </bean>
 
     <!-- Use injection to set the keyframe cache for FLV files -->
@@ -168,10 +170,19 @@
         <property name="arguments" value="4096"/>
     </bean>
 
+    <!-- Use injection to set the FLV implementation for writing FLV files -->
+    <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+        <property name="staticMethod">
+            <value>org.red5.io.flv.impl.FLVWriter.setFLV</value>
+        </property>
+        <property name="arguments" ref="flv.impl"/>
+    </bean>
+
     <!-- Low level access for recording to file -->
     <bean id="fileConsumer" scope="prototype" lazy-init="true" class="org.red5.server.stream.consumer.FileConsumer">
         <property name="delayWrite" value="${fileconsumer.delayed.write}"/>
         <property name="queueThreshold" value="${fileconsumer.queue.size}"/>
+        <property name="waitForVideoKeyframe" value="${fileconsumer.wait.for.keyframe}"/>
     </bean>
 
     <!-- ClientBroadcastStream and PlaylistSubscriberStream
@@ -190,8 +201,11 @@
              to get smaller delay for downstream server commands.
           -->
         <property name="underrunTrigger" value="${subscriberstream.underrun.trigger}"/>
+        <!-- Threshold for number of pending video frames -->
+        <property name="maxPendingVideoFrames" value="${subscriberstream.max.pending.frames}"/>
+        <property name="maxSequentialPendingVideoFrames" value="${subscriberstream.max.sequential.frames}"/>
     </bean>
-    
+
     <bean id="clientBroadcastStream" scope="prototype" lazy-init="true" class="org.red5.server.stream.ClientBroadcastStream">
         <property name="automaticRecording" value="${broadcaststream.auto.record}"/>
     </bean>
