@@ -30,6 +30,7 @@ import org.apache.mina.core.service.IoProcessor;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.write.WriteRequestQueue;
 import org.apache.mina.filter.codec.ProtocolCodecFactory;
+import org.red5.server.api.Red5;
 import org.red5.server.net.IConnectionManager;
 import org.red5.server.net.rtmp.codec.RTMP;
 import org.red5.server.net.rtmp.message.Packet;
@@ -53,22 +54,41 @@ public class RTMPMinaIoHandler extends IoHandlerAdapter {
     @Override
     public void sessionCreated(IoSession session) throws Exception {
         log.debug("Session created RTMP");
-        // add rtmpe filter, rtmp protocol filter is added upon successful handshake
-        session.getFilterChain().addFirst("rtmpeFilter", new RTMPEIoFilter());
-        // create a connection
-        RTMPMinaConnection conn = createRTMPMinaConnection();
-        // add session to the connection
-        conn.setIoSession(session);
-        // add the handler
-        conn.setHandler(handler);
-        // add the connections session id for look up using the connection manager
-        session.setAttribute(RTMPConnection.RTMP_SESSION_ID, conn.getSessionId());
-        // create an inbound handshake
-        InboundHandshake handshake = new InboundHandshake();
-        // set whether or not unverified will be allowed
-        handshake.setUnvalidatedConnectionAllowed(((RTMPHandler) handler).isUnvalidatedConnectionAllowed()); 
-        // add the in-bound handshake, defaults to non-encrypted mode
-        session.setAttribute(RTMPConnection.RTMP_HANDSHAKE, handshake);
+        // check for the rtmpe filter and add if not there
+        if (!session.getFilterChain().contains("rtmpeFilter")) {
+            // add rtmpe filter, rtmp protocol filter is added upon successful handshake
+            session.getFilterChain().addFirst("rtmpeFilter", new RTMPEIoFilter());
+        }
+        // connection instance
+        RTMPMinaConnection conn = null;
+        String sessionId = null;
+        // check to ensure the connection instance doesnt already exist
+        if (!session.containsAttribute(RTMPConnection.RTMP_SESSION_ID)) {
+            // create a connection
+            conn = createRTMPMinaConnection();
+            // add session to the connection
+            conn.setIoSession(session);
+            // add the handler
+            conn.setHandler(handler);
+            // get the session id
+            sessionId = conn.getSessionId();
+            // add the connections session id for look up using the connection manager
+            session.setAttribute(RTMPConnection.RTMP_SESSION_ID, sessionId);
+            // create an inbound handshake
+            InboundHandshake handshake = new InboundHandshake();
+            // set whether or not unverified will be allowed
+            handshake.setUnvalidatedConnectionAllowed(((RTMPHandler) handler).isUnvalidatedConnectionAllowed());
+            // add the in-bound handshake, defaults to non-encrypted mode
+            session.setAttribute(RTMPConnection.RTMP_HANDSHAKE, handshake);
+            log.debug("Created: {}", sessionId);
+        } else {
+            sessionId = (String) session.getAttribute(RTMPConnection.RTMP_SESSION_ID);
+            log.warn("Session previously created: {} id: {}", session.getId(), sessionId);
+            RTMPConnManager connManager = (RTMPConnManager) RTMPConnManager.getInstance();
+            if ((RTMPMinaConnection) connManager.getConnectionBySessionId(sessionId) == null) {
+                log.warn("Connection lookup failed for {}", sessionId);
+            }
+        }
     }
 
     /** {@inheritDoc} */
@@ -131,7 +151,9 @@ public class RTMPMinaIoHandler extends IoHandlerAdapter {
                     byte state = conn.getStateCode();
                     // checking the state before allowing a task to be created will hopefully prevent rejected task exceptions
                     if (state != RTMP.STATE_DISCONNECTING && state != RTMP.STATE_DISCONNECTED) {
+                        Red5.setConnectionLocal(conn);
                         conn.handleMessageReceived((Packet) message);
+                        Red5.setConnectionLocal(null);
                     } else {
                         log.info("Ignoring received message on {} due to state: {}", sessionId, RTMP.states[state]);
                     }
@@ -217,7 +239,8 @@ public class RTMPMinaIoHandler extends IoHandlerAdapter {
      * Close and clean-up the IoSession.
      * 
      * @param session
-     * @param immediately close without waiting for the write queue to flush
+     * @param immediately
+     *            close without waiting for the write queue to flush
      */
     @SuppressWarnings("deprecation")
     private void cleanSession(final IoSession session, boolean immediately) {
@@ -273,14 +296,16 @@ public class RTMPMinaIoHandler extends IoHandlerAdapter {
     /**
      * Setter for handler.
      *
-     * @param handler RTMP events handler
+     * @param handler
+     *            RTMP events handler
      */
     public void setHandler(IRTMPHandler handler) {
         this.handler = handler;
     }
 
     /**
-     * @param codecFactory the codecFactory to set
+     * @param codecFactory
+     *            the codecFactory to set
      */
     @Deprecated
     public void setCodecFactory(ProtocolCodecFactory codecFactory) {

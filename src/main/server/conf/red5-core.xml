@@ -27,6 +27,7 @@
         <property name="threadNamePrefix" value="RTMPConnectionScheduler-" />
     </bean>
     
+<!--
     <bean id="messageExecutor" class="org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor">
         <property name="corePoolSize" value="${rtmp.executor.core_pool_size}" />
         <property name="maxPoolSize" value="${rtmp.executor.max_pool_size}" />
@@ -42,9 +43,19 @@
         <property name="waitForTasksToCompleteOnShutdown" value="true" />
         <property name="threadNamePrefix" value="DeadlockGuardScheduler-" />
     </bean>
+-->
 
     <!-- RTMP connection manager -->
     <bean id="rtmpConnManager" class="org.red5.server.net.rtmp.RTMPConnManager" />
+
+    <!-- RTMP Decoding -->
+    <!-- Use injection to set the max packet size -->
+    <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+        <property name="staticMethod">
+            <value>org.red5.server.net.rtmp.codec.RTMPProtocolDecoder.setMaxPacketSize</value>
+        </property>
+        <property name="arguments" value="${rtmp.max_packet_size}"/>
+    </bean>
 
     <!-- RTMP Handler -->
     <bean id="rtmpHandler" class="org.red5.server.net.rtmp.RTMPHandler">
@@ -94,10 +105,10 @@
     <bean id="rtmpMinaConnection" scope="prototype" class="org.red5.server.net.rtmp.RTMPMinaConnection">
         <!-- Executor for scheduled tasks -->
         <property name="scheduler" ref="rtmpScheduler" />
-        <!-- Executor for incoming messages -->
+<!-- 
         <property name="executor" ref="messageExecutor" />
-        <!-- Deadlock guard executor -->
         <property name="deadlockGuardScheduler" ref="deadlockGuardScheduler" />
+-->
         <!-- Ping clients every X ms. Set to 0 to disable ghost detection code. -->
         <property name="pingInterval" value="${rtmp.ping_interval}" />
         <!-- Disconnect client after X ms of not responding. -->
@@ -149,10 +160,10 @@
     <bean id="rtmptConnection" scope="prototype" class="org.red5.server.net.rtmpt.RTMPTConnection">
         <!-- Executor for scheduled tasks -->
         <property name="scheduler" ref="rtmpScheduler" />
-        <!-- Executor for incoming messages -->
+<!--
         <property name="executor" ref="messageExecutor" />
-        <!-- Deadlock guard executor -->
         <property name="deadlockGuardScheduler" ref="deadlockGuardScheduler" />
+-->
         <!-- Ping clients every X ms. Set to 0 to disable ghost detection code. -->
         <property name="pingInterval" value="${rtmpt.ping_interval}" />
         <!-- Disconnect client after X ms of not responding. -->
