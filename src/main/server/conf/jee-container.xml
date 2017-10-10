@@ -115,6 +115,7 @@
     </bean>
 -->
     <!-- This entry enabled websocket support on port 8081 at localhost -->
+<!-- We disabe websocket transport (ralam)
     <bean id="webSocketTransport" class="org.red5.net.websocket.WebSocketTransport">
         <property name="addresses">
             <list>
@@ -122,5 +123,5 @@
             </list>
         </property>
     </bean>
-
+-->
 </beans>
