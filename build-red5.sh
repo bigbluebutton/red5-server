@@ -26,7 +26,12 @@ rm -rf ${RED5_WEBAPPS}/chat
 rm -rf ${RED5_WEBAPPS}/vod
 rm -rf ${RED5_WEBAPPS}/installer
 rm -rf ${RED5_WEBAPPS}/live
-rm -rf ${RED5_WEBAPPS}/root
+rm -rf ${RED5_WEBAPPS}/root/demos
+rm ${RED5_WEBAPPS}/root/biglogo.png
+rm ${RED5_WEBAPPS}/root/index.html
+rm ${RED5_WEBAPPS}/root/flvdemo.html
+rm ${RED5_WEBAPPS}/root/gc.jsp
+
 
 cp $RED5_SRC/extras/commons-fileupload-1.2.2.jar $RED5_DIR/lib
 cp $RED5_SRC/extras/commons-io-2.0.jar $RED5_DIR/lib
