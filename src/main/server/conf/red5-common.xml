@@ -182,6 +182,7 @@
     <bean id="fileConsumer" scope="prototype" lazy-init="true" class="org.red5.server.stream.consumer.FileConsumer">
         <property name="delayWrite" value="${fileconsumer.delayed.write}"/>
         <property name="queueThreshold" value="${fileconsumer.queue.size}"/>
+        <property name="usePriority" value="false"/>
         <property name="waitForVideoKeyframe" value="${fileconsumer.wait.for.keyframe}"/>
     </bean>
 
