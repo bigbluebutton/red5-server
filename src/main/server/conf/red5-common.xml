@@ -43,7 +43,7 @@
         <property name="services">
             <list>
                 <bean id="flvFileService" class="org.red5.server.service.flv.impl.FLVService">
-                    <property name="generateMetadata" value="true"/>
+                    <property name="generateMetadata" value="${rtmp.generateMetadata}"/>
                 </bean>
                 <bean id="mp3FileService" class="org.red5.server.service.mp3.impl.MP3Service"/>
                 <bean id="mp4FileService" class="org.red5.server.service.mp4.impl.MP4Service"/>
@@ -182,6 +182,7 @@
     <bean id="fileConsumer" scope="prototype" lazy-init="true" class="org.red5.server.stream.consumer.FileConsumer">
         <property name="delayWrite" value="${fileconsumer.delayed.write}"/>
         <property name="queueThreshold" value="${fileconsumer.queue.size}"/>
+        <property name="usePriority" value="false"/>
         <property name="waitForVideoKeyframe" value="${fileconsumer.wait.for.keyframe}"/>
     </bean>
 
